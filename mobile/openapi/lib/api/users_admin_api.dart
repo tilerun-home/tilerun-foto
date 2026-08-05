@@ -135,6 +135,56 @@ class UsersAdminApi {
     return null;
   }
 
+  /// Revoke user sessions
+  ///
+  /// Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> deleteUserSessionsAdminWithHttpInfo(String id, { Future<void>? abortTrigger, }) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/admin/users/{id}/sessions'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'DELETE',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+      abortTrigger: abortTrigger,
+    );
+  }
+
+  /// Revoke user sessions
+  ///
+  /// Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> deleteUserSessionsAdmin(String id, { Future<void>? abortTrigger, }) async {
+    final response = await deleteUserSessionsAdminWithHttpInfo(id, abortTrigger: abortTrigger,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Retrieve a user
   ///
   /// Retrieve  a specific user by their ID.

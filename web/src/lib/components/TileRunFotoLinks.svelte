@@ -4,4 +4,3 @@
   <a href="https://tilerun.net" rel="external">Support</a>
   <a href="https://github.com/tilerun-home/tilerun-foto" target="_blank" rel="noopener noreferrer">Broncode</a>
 </nav>
-

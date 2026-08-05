@@ -166,6 +166,7 @@ enum Permission {
   adminUserPeriodUpdate._(r'adminUser.update'),
   adminUserPeriodDelete._(r'adminUser.delete'),
   adminSessionPeriodRead._(r'adminSession.read'),
+  adminSessionPeriodDelete._(r'adminSession.delete'),
   adminAuthPeriodUnlinkAll._(r'adminAuth.unlinkAll'),
   ;
 
@@ -380,6 +381,7 @@ class PermissionTypeTransformer {
         case r'adminUser.update': return Permission.adminUserPeriodUpdate;
         case r'adminUser.delete': return Permission.adminUserPeriodDelete;
         case r'adminSession.read': return Permission.adminSessionPeriodRead;
+        case r'adminSession.delete': return Permission.adminSessionPeriodDelete;
         case r'adminAuth.unlinkAll': return Permission.adminAuthPeriodUnlinkAll;
         default:
           if (!allowNull) {

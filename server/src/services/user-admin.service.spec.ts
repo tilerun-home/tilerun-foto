@@ -23,10 +23,7 @@ describe(UserAdminService.name, () => {
 
   describe('deleteSessions', () => {
     it('revokes sessions without deleting the user', async () => {
-      mocks.session.getByUserId.mockResolvedValue([
-        { id: 'session-1' },
-        { id: 'session-2' },
-      ] as never);
+      mocks.session.getByUserId.mockResolvedValue([{ id: 'session-1' }, { id: 'session-2' }] as never);
       mocks.session.invalidateAll.mockResolvedValue();
       mocks.event.emit.mockResolvedValue();
 

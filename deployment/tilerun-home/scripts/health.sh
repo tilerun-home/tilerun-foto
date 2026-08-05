@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 set -a
 # shellcheck disable=SC1091
@@ -13,7 +13,14 @@ DB_STATE=$(docker inspect --format '{{.State.Health.Status}}' tilerun-foto-datab
 ML_STATE=$(docker inspect --format '{{.State.Health.Status}}' tilerun-foto-machine-learning 2>/dev/null || printf missing)
 REDIS_STATE=$(docker inspect --format '{{.State.Health.Status}}' tilerun-foto-redis 2>/dev/null || printf missing)
 FREE_BYTES=$(df -Pk "$UPLOAD_LOCATION" | awk 'NR==2 {print $4 * 1024}')
-LATEST_BACKUP=$(ls -1t "$BACKUP_LOCATION"/*.sql.gz 2>/dev/null | sed -n '1p' | sed 's#.*/##' || true)
+LATEST_BACKUP=
+for backup in "$BACKUP_LOCATION"/tilerun-foto-*.sql.gz; do
+  [ -f "$backup" ] || continue
+  if [ -z "$LATEST_BACKUP" ] || [ "$backup" -nt "$LATEST_BACKUP" ]; then
+    LATEST_BACKUP=$backup
+  fi
+done
+LATEST_BACKUP=${LATEST_BACKUP##*/}
 CHECKED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 STATUS=degraded
 [ "$SERVER_STATE" = healthy ] && [ "$DB_STATE" = healthy ] && [ "$ML_STATE" = healthy ] && [ "$REDIS_STATE" = healthy ] && STATUS=ok

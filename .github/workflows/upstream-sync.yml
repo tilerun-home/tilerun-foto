@@ -13,9 +13,10 @@ jobs:
   propose-upstream-merge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Fetch latest stable Immich release
         id: upstream
         env:
@@ -29,6 +30,7 @@ jobs:
       - name: Merge without hiding conflicts
         if: steps.upstream.outputs.needed == 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.upstream.outputs.tag }}
         run: |
           branch="upstream/${TAG}"
@@ -36,6 +38,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git merge --no-edit "$TAG"
+          gh auth setup-git
           git push origin "$branch"
       - name: Open review pull request
         if: steps.upstream.outputs.needed == 'true'

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
 ./scripts/preflight.sh
@@ -14,19 +14,18 @@ fi
 if ! docker pull "$(awk -F= '/^TILERUN_FOTO_IMAGE=/{print $2}' .env)"; then
   printf 'Registry-image niet beschikbaar; lokale TileRun-build wordt gebruikt.\n'
   docker compose --env-file .env -f compose.yml -f compose.build.yml build foto-server
-  COMPOSE_FILES='-f compose.yml -f compose.build.yml'
+  set -- -f compose.yml -f compose.build.yml
 else
-  COMPOSE_FILES='-f compose.yml'
+  set -- -f compose.yml
 fi
 
-# shellcheck disable=SC2086
-docker compose --env-file .env $COMPOSE_FILES up -d --remove-orphans
+docker compose --env-file .env "$@" up -d --remove-orphans
 
 tries=0
 until ./scripts/health.sh >/dev/null 2>&1; do
   tries=$((tries + 1))
   if [ "$tries" -ge 30 ]; then
-    docker compose --env-file .env $COMPOSE_FILES logs --tail=120 foto-server foto-database foto-machine-learning >&2
+    docker compose --env-file .env "$@" logs --tail=120 foto-server foto-database foto-machine-learning >&2
     if [ -n "$PREVIOUS_IMAGE" ]; then
       printf 'Healthcheck mislukt; vorige image wordt hersteld: %s\n' "$PREVIOUS_IMAGE" >&2
       TILERUN_FOTO_IMAGE="$PREVIOUS_IMAGE" docker compose --env-file .env -f compose.yml up -d foto-server
@@ -37,4 +36,3 @@ until ./scripts/health.sh >/dev/null 2>&1; do
 done
 
 ./scripts/health.sh
-

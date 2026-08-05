@@ -132,7 +132,8 @@ export class UserAdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Endpoint({
     summary: 'Revoke user sessions',
-    description: 'Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.',
+    description:
+      'Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.',
     history: new HistoryBuilder().added('v3').stable('v3'),
   })
   deleteUserSessionsAdmin(@Param() { id }: UUIDParamDto): Promise<void> {
