@@ -7315,6 +7315,7 @@ export enum Permission {
     AdminUserUpdate = "adminUser.update",
     AdminUserDelete = "adminUser.delete",
     AdminSessionRead = "adminSession.read",
+    AdminSessionDelete = "adminSession.delete",
     AdminAuthUnlinkAll = "adminAuth.unlinkAll"
 }
 export enum AssetMediaStatus {

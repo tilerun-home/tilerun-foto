@@ -1,0 +1,45 @@
+name: Immich upstream sync
+
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose-upstream-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch latest stable Immich release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git remote add upstream https://github.com/immich-app/immich.git || true
+          git fetch upstream --tags
+          tag=$(gh api repos/immich-app/immich/releases/latest --jq .tag_name)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git merge-base --is-ancestor "$tag" HEAD; then echo "needed=false" >> "$GITHUB_OUTPUT"; else echo "needed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Merge without hiding conflicts
+        if: steps.upstream.outputs.needed == 'true'
+        env:
+          TAG: ${{ steps.upstream.outputs.tag }}
+        run: |
+          branch="upstream/${TAG}"
+          git switch -c "$branch"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git merge --no-edit "$TAG"
+          git push origin "$branch"
+      - name: Open review pull request
+        if: steps.upstream.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.upstream.outputs.tag }}
+        run: gh pr create --head "upstream/${TAG}" --base main --title "Merge Immich ${TAG}" --body "Automatische upstream-merge. CI, licentiecontrole en securityscan moeten slagen voordat deze wordt samengevoegd."

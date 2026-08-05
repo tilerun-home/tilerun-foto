@@ -1,0 +1,97 @@
+name: tilerun-foto
+
+services:
+  foto-server:
+    container_name: tilerun-foto-server
+    image: ${TILERUN_FOTO_IMAGE}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOSTNAME: foto-database
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REDIS_HOSTNAME: foto-redis
+      IMMICH_CONFIG_FILE: /config/immich.json
+      IMMICH_MACHINE_LEARNING_URL: http://foto-machine-learning:3003
+      IMMICH_LOG_LEVEL: log
+    secrets:
+      - db_password
+    volumes:
+      - ${UPLOAD_LOCATION}:/data
+      - ./runtime/immich.json:/config/immich.json:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 192.168.1.2:2283:2283
+    depends_on:
+      foto-redis:
+        condition: service_healthy
+      foto-database:
+        condition: service_healthy
+      foto-machine-learning:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "immich-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [tilerun-foto]
+
+  foto-machine-learning:
+    container_name: tilerun-foto-machine-learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      MACHINE_LEARNING_WORKERS: "1"
+      MACHINE_LEARNING_REQUEST_THREADS: "2"
+      MACHINE_LEARNING_MODEL_INTER_OP_THREADS: "1"
+      MACHINE_LEARNING_MODEL_INTRA_OP_THREADS: "2"
+      MACHINE_LEARNING_MODEL_TTL: "300"
+    volumes:
+      - ${MODEL_CACHE_LOCATION}:/cache
+    healthcheck:
+      disable: false
+    networks: [tilerun-foto]
+
+  foto-redis:
+    container_name: tilerun-foto-redis
+    image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks: [tilerun-foto]
+
+  foto-database:
+    container_name: tilerun-foto-database
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: --data-checksums
+      DB_STORAGE_TYPE: ${DB_STORAGE_TYPE:-HDD}
+    secrets:
+      - db_password
+    volumes:
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --dbname=$${POSTGRES_DB} --username=$${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [tilerun-foto]
+
+networks:
+  tilerun-foto:
+    name: tilerun-foto
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+

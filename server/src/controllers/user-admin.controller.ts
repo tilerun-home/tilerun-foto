@@ -127,6 +127,18 @@ export class UserAdminController {
     return this.service.getSessions(auth, id);
   }
 
+  @Delete(':id/sessions')
+  @Authenticated({ permission: Permission.AdminSessionDelete, admin: true })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Revoke user sessions',
+    description: 'Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.',
+    history: new HistoryBuilder().added('v3').stable('v3'),
+  })
+  deleteUserSessionsAdmin(@Param() { id }: UUIDParamDto): Promise<void> {
+    return this.service.deleteSessions(id);
+  }
+
   @Get(':id/statistics')
   @Authenticated({ permission: Permission.AdminUserRead, admin: true })
   @Endpoint({

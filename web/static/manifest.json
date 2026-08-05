@@ -1,6 +1,6 @@
 {
-  "background_color": "#ffffff",
-  "description": "Self-hosted photo and video backup solution directly from your mobile phone.",
+  "background_color": "#fdf6e3",
+  "description": "Je foto's en video's lokaal op je TileRun Home.",
   "dir": "auto",
   "display": "standalone",
   "icons": [
@@ -23,12 +23,12 @@
       "type": "image/png"
     }
   ],
-  "lang": "en",
-  "name": "Immich",
-  "short_name": "Immich",
+  "lang": "nl",
+  "name": "TileRun Foto",
+  "short_name": "Foto",
   "shortcuts": [
     {
-      "name": "Photos",
+      "name": "Foto's",
       "url": "/photos"
     },
     {
@@ -36,9 +36,10 @@
       "url": "/albums"
     },
     {
-      "name": "Map",
+      "name": "Kaart",
       "url": "/map"
     }
   ],
-  "start_url": "/"
+  "start_url": "/",
+  "theme_color": "#477e60"
 }

@@ -134,6 +134,15 @@ export class UserAdminService extends BaseService {
     return sessions.map((session) => mapSession(session));
   }
 
+  async deleteSessions(id: string): Promise<void> {
+    await this.findOrFail(id, {});
+    const sessions = await this.sessionRepository.getByUserId(id);
+    await this.sessionRepository.invalidateAll({ userId: id });
+    for (const session of sessions) {
+      await this.eventRepository.emit('SessionDelete', { sessionId: session.id });
+    }
+  }
+
   async getStatistics(auth: AuthDto, id: string, dto: AssetStatsDto): Promise<AssetStatsResponseDto> {
     const stats = await this.assetRepository.getStatistics(id, dto);
     return mapStats(stats);

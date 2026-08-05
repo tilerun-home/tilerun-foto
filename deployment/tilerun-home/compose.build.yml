@@ -1,0 +1,12 @@
+services:
+  foto-server:
+    image: tilerun-foto-server:${TILERUN_FOTO_VERSION}
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+      args:
+        BUILD_ID: local
+        BUILD_IMAGE: tilerun-foto-server:${TILERUN_FOTO_VERSION}
+        BUILD_SOURCE_REF: ${TILERUN_FOTO_VERSION}
+        BUILD_SOURCE_COMMIT: local
+

@@ -67,15 +67,15 @@
 @layer base {
   :root {
     /* light */
-    --immich-primary: 66 80 175;
-    --immich-bg: 255 255 255;
-    --immich-fg: 0 0 0;
+    --immich-primary: 71 126 96;
+    --immich-bg: 253 246 227;
+    --immich-fg: 47 48 47;
 
     /* dark */
-    --immich-dark-primary: 172 203 250;
-    --immich-dark-bg: 10 10 10;
-    --immich-dark-fg: 229 231 235;
-    --immich-dark-gray: 33 33 33;
+    --immich-dark-primary: 163 182 164;
+    --immich-dark-bg: 31 43 36;
+    --immich-dark-fg: 253 246 227;
+    --immich-dark-gray: 49 91 69;
   }
 
   button:not(:disabled),
@@ -147,6 +147,9 @@
   body {
     margin: 0;
     color: var(--immich-ui-dark);
+    background:
+      radial-gradient(circle at 10% 0%, rgb(163 182 164 / 20%), transparent 30rem),
+      rgb(var(--immich-bg));
   }
 
   body.asset-viewer-open {
@@ -166,6 +169,34 @@
 
   .icon-white-drop-shadow {
     filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+  }
+}
+
+@layer components {
+  .tilerun-foto-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .tilerun-foto-links a {
+    color: rgb(49 91 69);
+    text-decoration: none;
+  }
+
+  .tilerun-foto-links a:hover,
+  .tilerun-foto-links a:focus-visible {
+    color: rgb(71 126 96);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  :root.dark .tilerun-foto-links a {
+    color: rgb(163 182 164);
   }
 }
 

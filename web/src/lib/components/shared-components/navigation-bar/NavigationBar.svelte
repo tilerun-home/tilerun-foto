@@ -7,6 +7,8 @@
   import { clickOutside } from '$lib/actions/click-outside';
   import NotificationPanel from '$lib/components/shared-components/navigation-bar/NotificationPanel.svelte';
   import SearchBar from '$lib/components/shared-components/search-bar/SearchBar.svelte';
+  import TileRunFotoLinks from '$lib/components/TileRunFotoLinks.svelte';
+  import TileRunFotoLogo from '$lib/components/TileRunFotoLogo.svelte';
   import SkipLink from '$lib/elements/SkipLink.svelte';
   import { authManager } from '$lib/managers/auth-manager.svelte';
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
@@ -15,7 +17,7 @@
   import { mediaQueryManager } from '$lib/stores/media-query-manager.svelte';
   import { notificationManager } from '$lib/stores/notification-manager.svelte';
   import { sidebarStore } from '$lib/stores/sidebar.svelte';
-  import { ActionButton, Button, IconButton, Logo } from '@immich/ui';
+  import { ActionButton, Button, IconButton } from '@immich/ui';
   import { mdiBellBadge, mdiBellOutline, mdiMagnify, mdiMenu, mdiTrayArrowUp } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
@@ -77,7 +79,11 @@
         class="sidebar:hidden"
       />
       <a data-sveltekit-preload-data="hover" href={Route.photos()}>
-        <Logo variant={mediaQueryManager.isFullSidebar ? 'inline' : 'icon'} class="max-md:h-12" />
+        <TileRunFotoLogo
+          variant={mediaQueryManager.isFullSidebar ? 'inline' : 'icon'}
+          size={mediaQueryManager.isFullSidebar ? 'medium' : 'small'}
+          class="max-md:h-10"
+        />
       </a>
     </div>
     <div class="flex justify-between gap-4 pe-6 lg:gap-8">
@@ -88,6 +94,9 @@
       </div>
 
       <section class="flex w-full place-items-center justify-end gap-1 sm:w-auto md:gap-2">
+        <div class="hidden xl:block">
+          <TileRunFotoLinks />
+        </div>
         {#if featureFlagsManager.value.search}
           <IconButton
             color="secondary"

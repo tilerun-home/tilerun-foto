@@ -235,10 +235,10 @@
 <VersionAnnouncement />
 
 <svelte:head>
-  <title>{page.data.meta?.title || 'Web'} - Immich</title>
+  <title>{page.data.meta?.title || 'Foto'} - TileRun Foto</title>
   <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
-  <meta name="theme-color" content="white" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="black" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fdf6e3" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1f2b24" media="(prefers-color-scheme: dark)" />
 
   {#if page.data.meta}
     <meta name="description" content={page.data.meta.description} />

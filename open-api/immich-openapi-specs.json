@@ -1855,6 +1855,55 @@
       }
     },
     "/admin/users/{id}/sessions": {
+      "delete": {
+        "description": "Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.",
+        "operationId": "deleteUserSessionsAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Revoke user sessions",
+        "tags": [
+          "Users (admin)"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v3",
+            "state": "Added"
+          },
+          {
+            "version": "v3",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "adminSession.delete",
+        "x-immich-state": "Stable"
+      },
       "get": {
         "description": "Retrieve all sessions for a specific user.",
         "operationId": "getUserSessionsAdmin",
@@ -21038,6 +21087,7 @@
           "adminUser.update",
           "adminUser.delete",
           "adminSession.read",
+          "adminSession.delete",
           "adminAuth.unlinkAll"
         ],
         "type": "string"

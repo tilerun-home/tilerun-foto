@@ -1,0 +1,39 @@
+name: TileRun Foto checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  web-and-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm --filter @immich/sdk --filter immich-web --filter immich install --frozen-lockfile
+      - run: pnpm --filter @immich/sdk build
+      - run: pnpm --filter @immich/plugin-sdk build
+      - run: pnpm --filter immich-web check:svelte
+      - run: pnpm --filter immich-web check:typescript
+      - run: pnpm --filter immich-web build
+      - run: pnpm --filter immich check
+      - run: pnpm --filter immich test --run src/services/user-admin.service.spec.ts
+      - run: test -f LICENSE && test -f NOTICE-TILERUN.md && grep -q 'GNU Affero General Public License' LICENSE
+      - run: python3 -m unittest discover deployment/tilerun-home/tests
+      - run: cp deployment/tilerun-home/.env.example deployment/tilerun-home/.env
+      - run: mkdir -p deployment/tilerun-home/runtime deployment/tilerun-home/secrets
+      - run: printf test-password > deployment/tilerun-home/secrets/db_password
+      - run: printf test-oidc-secret > deployment/tilerun-home/secrets/oidc_client_secret
+      - run: sed -i 's#https://CHANGE-ME.cloudflareaccess.com/cdn-cgi/access/sso/oidc/CHANGE-ME#https://example.cloudflareaccess.com/cdn-cgi/access/sso/oidc/test#; s/TILERUN_FOTO_OIDC_CLIENT_ID=CHANGE-ME/TILERUN_FOTO_OIDC_CLIENT_ID=test-client/; s/TILERUN_FOTO_SUPERUSER_EMAIL=CHANGE-ME@example.com/TILERUN_FOTO_SUPERUSER_EMAIL=admin@example.com/' deployment/tilerun-home/.env
+      - run: python3 deployment/tilerun-home/scripts/render-config.py
+      - run: docker compose --env-file deployment/tilerun-home/.env -f deployment/tilerun-home/compose.yml config --quiet

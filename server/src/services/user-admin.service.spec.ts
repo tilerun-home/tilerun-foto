@@ -21,6 +21,24 @@ describe(UserAdminService.name, () => {
     );
   });
 
+  describe('deleteSessions', () => {
+    it('revokes sessions without deleting the user', async () => {
+      mocks.session.getByUserId.mockResolvedValue([
+        { id: 'session-1' },
+        { id: 'session-2' },
+      ] as never);
+      mocks.session.invalidateAll.mockResolvedValue();
+      mocks.event.emit.mockResolvedValue();
+
+      await expect(sut.deleteSessions(userStub.user1.id)).resolves.toBeUndefined();
+
+      expect(mocks.session.invalidateAll).toHaveBeenCalledWith({ userId: userStub.user1.id });
+      expect(mocks.event.emit).toHaveBeenCalledWith('SessionDelete', { sessionId: 'session-1' });
+      expect(mocks.event.emit).toHaveBeenCalledWith('SessionDelete', { sessionId: 'session-2' });
+      expect(mocks.user.delete).not.toHaveBeenCalled();
+    });
+  });
+
   describe('create', () => {
     it('should not create a user if there is no local admin account', async () => {
       mocks.user.getAdmin.mockResolvedValueOnce(void 0);
