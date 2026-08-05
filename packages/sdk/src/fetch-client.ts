@@ -3780,6 +3780,17 @@ export function restoreUserAdmin({ id }: {
     }));
 }
 /**
+ * Revoke user sessions
+ */
+export function deleteUserSessionsAdmin({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/admin/users/${encodeURIComponent(id)}/sessions`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+/**
  * Retrieve user sessions
  */
 export function getUserSessionsAdmin({ id }: {
