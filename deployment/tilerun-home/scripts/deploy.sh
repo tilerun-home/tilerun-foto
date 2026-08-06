@@ -41,9 +41,10 @@ done
 compose --env-file .env -p tilerun-foto "$@" up -d --remove-orphans
 
 tries=0
+HEALTH_MAX_TRIES=${TILERUN_FOTO_HEALTH_MAX_TRIES:-150}
 until ./scripts/health.sh >/dev/null 2>&1; do
   tries=$((tries + 1))
-  if [ "$tries" -ge 30 ]; then
+  if [ "$tries" -ge "$HEALTH_MAX_TRIES" ]; then
     compose --env-file .env -p tilerun-foto "$@" logs --tail=120 foto-server foto-database foto-machine-learning >&2
     if [ -n "$PREVIOUS_IMAGE" ]; then
       printf 'Healthcheck mislukt; vorige image wordt hersteld: %s\n' "$PREVIOUS_IMAGE" >&2
