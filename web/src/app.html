@@ -6,7 +6,8 @@
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <link rel="shortcut icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/tilerun-foto-logo.svg" />
+    <link rel="shortcut icon" type="image/svg+xml" href="/tilerun-foto-logo.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
@@ -65,7 +66,7 @@
       }
 
       #stencil {
-        --stencil-width: 150px;
+        --stencil-width: 52px;
         display: flex;
         width: var(--stencil-width);
         margin-left: auto;
@@ -78,7 +79,14 @@
         visibility: hidden;
         animation:
           0s linear 0.3s forwards delayedVisibility,
-          loadspin 8s linear infinite;
+          loadpulse 1.6s ease-in-out infinite;
+      }
+
+      @keyframes loadpulse {
+        50% {
+          transform: scale(0.94);
+          opacity: 0.68;
+        }
       }
     </style>
     <link rel="stylesheet" href="/custom.css" />
@@ -90,13 +98,7 @@
 
   <body class="bg-light text-dark">
     <div id="stencil">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-label="TileRun Foto wordt geladen">
-        <rect width="64" height="64" rx="18" fill="#477e60" />
-        <path d="M16 29 32 16l16 13v19H37V36H27v12H16Z" fill="#fdf6e3" />
-        <path d="M23 25h18" stroke="#ac9d57" stroke-width="4" stroke-linecap="round" />
-        <rect x="35" y="36" width="17" height="13" rx="4" fill="#315b45" stroke="#fdf6e3" stroke-width="2" />
-        <circle cx="43.5" cy="42.5" r="3.2" fill="#fdf6e3" />
-      </svg>
+      <img src="/tilerun-foto-logo.svg" alt="TileRun Foto wordt geladen" />
     </div>
     <div>%sveltekit.body%</div>
   </body>

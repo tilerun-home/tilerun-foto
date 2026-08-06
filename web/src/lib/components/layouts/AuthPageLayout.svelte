@@ -15,29 +15,20 @@
 
 <section class="relative isolate flex min-h-dvh min-w-dvw items-center justify-center">
   {#if withBackdrop}
-    <div class="absolute -z-10 flex size-full place-content-center place-items-center">
-      <img
-        src="/tilerun-foto-logo.svg"
-        class="mx-auto mb-2 h-3/4 max-w-(--breakpoint-md) overflow-hidden opacity-20 antialiased"
-        alt="TileRun Foto-logo"
-      />
-      <div
-        class="absolute inset-s-0 top-0 h-[99%] w-full bg-transparent backdrop-blur-[200px] dark:bg-immich-dark-bg/20"
-      ></div>
-    </div>
+    <div class="tilerun-auth-backdrop absolute inset-0 -z-10"></div>
   {/if}
 
-  <Card color="secondary" class="m-2 w-full max-w-xl border">
+  <Card color="secondary" class="tilerun-auth-card m-4 w-full max-w-lg border">
     {#if withHeader}
-      <CardHeader class="mt-6">
+      <CardHeader class="mt-5">
         <VStack>
-          <TileRunFotoLogo variant="inline" size="giant" />
-          <Heading size="large" class="font-semibold" color="primary" tag="h1">{title}</Heading>
+          <TileRunFotoLogo variant="inline" size="large" />
+          <Heading size="large" class="mt-2 font-bold tracking-[-0.025em]" color="primary" tag="h1">{title}</Heading>
         </VStack>
       </CardHeader>
     {/if}
 
-    <CardBody class="p-8">
+    <CardBody class="px-8 pt-6 pb-7">
       {@render children?.()}
       <div class="mt-8 border-t border-gray-200 pt-5 dark:border-gray-700">
         <TileRunFotoLinks />
