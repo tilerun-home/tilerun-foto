@@ -48,7 +48,11 @@ services:
     volumes:
       - ${MODEL_CACHE_LOCATION}:/cache
     healthcheck:
-      disable: false
+      test: ["CMD", "python3", "healthcheck.py"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks: [tilerun-foto]
 
   foto-redis:

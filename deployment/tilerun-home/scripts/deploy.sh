@@ -9,7 +9,8 @@ cd "$ROOT"
 ./scripts/preflight.sh
 
 PREVIOUS_IMAGE=$(docker inspect --format '{{.Config.Image}}' tilerun-foto-server 2>/dev/null || true)
-if docker inspect tilerun-foto-database >/dev/null 2>&1; then
+DB_HEALTH=$(docker inspect --format '{{.State.Health.Status}}' tilerun-foto-database 2>/dev/null || true)
+if [ "$DB_HEALTH" = healthy ]; then
   ./scripts/backup.sh >/dev/null
 fi
 
