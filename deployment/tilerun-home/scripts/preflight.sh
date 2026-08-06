@@ -3,6 +3,8 @@ set -eu
 
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
+# shellcheck disable=SC1091
+. "$ROOT/scripts/lib-compose.sh"
 
 fail() { printf 'FOUT: %s\n' "$1" >&2; exit 1; }
 note() { printf 'OK: %s\n' "$1"; }
@@ -11,7 +13,7 @@ note() { printf 'OK: %s\n' "$1"; }
 [ -s secrets/db_password ] || fail "secrets/db_password ontbreekt of is leeg."
 [ -s runtime/immich.json ] || fail "Voer eerst scripts/render-config.py uit."
 command -v docker >/dev/null 2>&1 || fail "Docker/Container Manager ontbreekt."
-docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 ontbreekt."
+compose version >/dev/null 2>&1 || fail "Docker Compose ontbreekt (zowel plugin als docker-compose zijn niet gevonden)."
 command -v python3 >/dev/null 2>&1 || fail "Python 3 ontbreekt voor configuratie- en restorecontroles."
 
 if [ -r /etc/VERSION ]; then
@@ -68,7 +70,7 @@ case "${TILERUN_FOTO_REQUIRE_PUBLIC_EDGE:-true}" in
   *) printf 'WAARSCHUWING: lokale bootstrap; publieke DNS en Tunnel worden nog niet gecontroleerd.\n' >&2 ;;
 esac
 
-docker compose --env-file .env -f compose.yml config >/dev/null
+compose --env-file .env -p tilerun-foto -f compose.yml config >/dev/null
 note "Compose-configuratie geldig"
 
 if command -v curl >/dev/null 2>&1; then

@@ -1,5 +1,3 @@
-name: tilerun-foto
-
 services:
   foto-server:
     container_name: tilerun-foto-server
@@ -94,4 +92,3 @@ networks:
 secrets:
   db_password:
     file: ./secrets/db_password
-
