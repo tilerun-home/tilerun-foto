@@ -13,13 +13,29 @@ if docker inspect tilerun-foto-database >/dev/null 2>&1; then
   ./scripts/backup.sh >/dev/null
 fi
 
-if ! docker pull "$(awk -F= '/^TILERUN_FOTO_IMAGE=/{print $2}' .env)"; then
-  printf 'Registry-image niet beschikbaar; lokale TileRun-build wordt gebruikt.\n'
-  compose --env-file .env -p tilerun-foto -f compose.yml -f compose.build.yml build foto-server
-  set -- -f compose.yml -f compose.build.yml
-else
-  set -- -f compose.yml
-fi
+IMAGE=$(awk -F= '/^TILERUN_FOTO_IMAGE=/{print $2}' .env)
+attempt=1
+until docker pull "$IMAGE"; do
+  [ "$attempt" -lt 3 ] || {
+    printf 'FOUT: downloaden van %s mislukte na drie pogingen; voer bootstrap-local.sh later opnieuw uit.\n' "$IMAGE" >&2
+    exit 1
+  }
+  attempt=$((attempt + 1))
+  printf 'Download onderbroken; poging %s/3 hervat over 5 seconden.\n' "$attempt" >&2
+  sleep 5
+done
+set -- -f compose.yml
+
+attempt=1
+until compose --env-file .env -p tilerun-foto "$@" pull; do
+  [ "$attempt" -lt 3 ] || {
+    printf 'FOUT: een upstream-container kon na drie pogingen niet worden gedownload.\n' >&2
+    exit 1
+  }
+  attempt=$((attempt + 1))
+  printf 'Upstream-download onderbroken; poging %s/3 hervat over 5 seconden.\n' "$attempt" >&2
+  sleep 5
+done
 
 compose --env-file .env -p tilerun-foto "$@" up -d --remove-orphans
 
