@@ -23,7 +23,7 @@
   class="inline-flex shrink-0 items-center gap-2.5 text-dark dark:text-light {className}"
   style="height: {height}px"
 >
-  <img src="/tilerun-foto-logo.svg" alt="" width={height} {height} class="block rounded-[22%]" />
+  <img src="/tilerun-foto-logo-v2.svg" alt="" width={height} {height} class="block rounded-[22%]" />
   {#if variant === 'inline'}
     <span class="flex min-w-0 flex-col leading-none" style="font-size: {wordmarkSize}px">
       <strong class="font-extrabold tracking-[-0.025em]">TileRun</strong>
