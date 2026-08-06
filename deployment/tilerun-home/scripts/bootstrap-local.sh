@@ -4,6 +4,11 @@ set -eu
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"
 
+for docker_dir in /var/packages/ContainerManager/target/usr/bin /var/packages/Docker/target/usr/bin; do
+  [ -x "$docker_dir/docker" ] && PATH="$docker_dir:$PATH"
+done
+export PATH
+
 [ -f .env ] || { printf 'FOUT: .env ontbreekt.\n' >&2; exit 1; }
 mkdir -p secrets runtime backups
 umask 077
