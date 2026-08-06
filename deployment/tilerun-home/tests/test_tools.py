@@ -57,6 +57,24 @@ class DeploymentToolsTest(unittest.TestCase):
             photo.write_bytes(b"changed-photo")
             self.assertNotEqual(module.manifest(root), expected)
 
+    def test_rendered_config_supports_local_bootstrap_without_oidc_secret(self):
+        module = load_script("render-config.py")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "secrets").mkdir()
+            (root / ".env").write_text(
+                "TILERUN_FOTO_OAUTH_ENABLED=false\n"
+                "TILERUN_FOTO_PASSWORD_LOGIN=true\n"
+                "TILERUN_FOTO_EXTERNAL_URL=https://foto.tilerun.net\n",
+                encoding="utf-8",
+            )
+            module.ROOT = root
+            with patch.dict("os.environ", {}, clear=True):
+                module.main()
+            config = json.loads((root / "runtime" / "immich.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["oauth"], {"enabled": False})
+            self.assertTrue(config["passwordLogin"]["enabled"])
+
 
 if __name__ == "__main__":
     unittest.main()

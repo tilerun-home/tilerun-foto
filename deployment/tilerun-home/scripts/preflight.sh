@@ -9,7 +9,6 @@ note() { printf 'OK: %s\n' "$1"; }
 
 [ -f .env ] || fail "Kopieer .env.example naar .env en vul de waarden in."
 [ -s secrets/db_password ] || fail "secrets/db_password ontbreekt of is leeg."
-[ -s secrets/oidc_client_secret ] || fail "secrets/oidc_client_secret ontbreekt of is leeg."
 [ -s runtime/immich.json ] || fail "Voer eerst scripts/render-config.py uit."
 command -v docker >/dev/null 2>&1 || fail "Docker/Container Manager ontbreekt."
 docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 ontbreekt."
@@ -34,6 +33,10 @@ set -a
 . ./.env
 set +a
 
+case "${TILERUN_FOTO_OAUTH_ENABLED:-true}" in
+  1|true|TRUE|yes|on) [ -s secrets/oidc_client_secret ] || fail "secrets/oidc_client_secret ontbreekt of is leeg." ;;
+esac
+
 for path in "$UPLOAD_LOCATION" "$DB_DATA_LOCATION" "$MODEL_CACHE_LOCATION" "$BACKUP_LOCATION"; do
   mkdir -p "$path"
   [ -w "$path" ] || fail "Geen schrijfrecht op $path"
@@ -52,14 +55,18 @@ if command -v ss >/dev/null 2>&1 && ss -ltn | awk '{print $4}' | grep -Eq '(^|:)
 fi
 note "poort 2283 beschikbaar of door TileRun Foto beheerd"
 
-if command -v nslookup >/dev/null 2>&1; then
-  nslookup foto.tilerun.net >/dev/null 2>&1 || fail "DNS voor foto.tilerun.net resolveert niet."
-  note "publieke DNS resolveert"
-fi
-
-docker ps --format '{{.Names}}' | grep -Eq 'cloudflared|cloudflare.*tunnel' \
-  || fail "Geen actieve Cloudflare Tunnel-container gevonden."
-note "Cloudflare Tunnel actief"
+case "${TILERUN_FOTO_REQUIRE_PUBLIC_EDGE:-true}" in
+  1|true|TRUE|yes|on)
+    if command -v nslookup >/dev/null 2>&1; then
+      nslookup foto.tilerun.net >/dev/null 2>&1 || fail "DNS voor foto.tilerun.net resolveert niet."
+      note "publieke DNS resolveert"
+    fi
+    docker ps --format '{{.Names}}' | grep -Eq 'cloudflared|cloudflare.*tunnel' \
+      || fail "Geen actieve Cloudflare Tunnel-container gevonden."
+    note "Cloudflare Tunnel actief"
+    ;;
+  *) printf 'WAARSCHUWING: lokale bootstrap; publieke DNS en Tunnel worden nog niet gecontroleerd.\n' >&2 ;;
+esac
 
 docker compose --env-file .env -f compose.yml config >/dev/null
 note "Compose-configuratie geldig"

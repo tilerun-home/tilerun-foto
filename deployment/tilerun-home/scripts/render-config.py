@@ -27,18 +27,42 @@ def required(values: dict[str, str], name: str) -> str:
     return value
 
 
+def enabled(values: dict[str, str], name: str, default: bool) -> bool:
+    fallback = "true" if default else "false"
+    return os.environ.get(name, values.get(name, fallback)).lower() in {"1", "true", "yes", "on"}
+
+
 def main() -> None:
     values = load_env(ROOT / ".env")
-    secret_path = ROOT / "secrets" / "oidc_client_secret"
-    if not secret_path.is_file():
-        raise SystemExit("Maak secrets/oidc_client_secret aan met chmod 600.")
-    client_secret = secret_path.read_text(encoding="utf-8").strip()
-    if not client_secret or "CHANGE-ME" in client_secret:
-        raise SystemExit("OIDC-clientsecret is leeg of nog een placeholder.")
+    oauth_enabled = enabled(values, "TILERUN_FOTO_OAUTH_ENABLED", True)
+    password_login = enabled(values, "TILERUN_FOTO_PASSWORD_LOGIN", True)
+    if not oauth_enabled and not password_login:
+        raise SystemExit("OAuth en wachtwoordlogin mogen niet tegelijk uit staan.")
 
-    password_login = os.environ.get(
-        "TILERUN_FOTO_PASSWORD_LOGIN", values.get("TILERUN_FOTO_PASSWORD_LOGIN", "true")
-    ).lower() in {"1", "true", "yes", "on"}
+    oauth: dict[str, object] = {"enabled": False}
+    if oauth_enabled:
+        secret_path = ROOT / "secrets" / "oidc_client_secret"
+        if not secret_path.is_file():
+            raise SystemExit("Maak secrets/oidc_client_secret aan met chmod 600.")
+        client_secret = secret_path.read_text(encoding="utf-8").strip()
+        if not client_secret or "CHANGE-ME" in client_secret:
+            raise SystemExit("OIDC-clientsecret is leeg of nog een placeholder.")
+        oauth = {
+            "enabled": True,
+            "issuerUrl": required(values, "TILERUN_FOTO_OIDC_ISSUER"),
+            "clientId": required(values, "TILERUN_FOTO_OIDC_CLIENT_ID"),
+            "clientSecret": client_secret,
+            "scope": "openid email profile",
+            "buttonText": "Doorgaan met TileRun",
+            "autoRegister": True,
+            "autoLaunch": True,
+            "mobileOverrideEnabled": True,
+            "mobileRedirectUri": "https://foto.tilerun.net/api/oauth/mobile-redirect",
+            "signingAlgorithm": "RS256",
+            "profileSigningAlgorithm": "none",
+            "tokenEndpointAuthMethod": "client_secret_post",
+            "roleClaim": "immich_role",
+        }
 
     config = {
         "backup": {"database": {"enabled": True, "cronExpression": "0 2 * * *", "keepLastAmount": 14}},
@@ -59,22 +83,7 @@ def main() -> None:
             "facialRecognition": {"enabled": True},
         },
         "nightlyTasks": {"startTime": "02:00"},
-        "oauth": {
-            "enabled": True,
-            "issuerUrl": required(values, "TILERUN_FOTO_OIDC_ISSUER"),
-            "clientId": required(values, "TILERUN_FOTO_OIDC_CLIENT_ID"),
-            "clientSecret": client_secret,
-            "scope": "openid email profile",
-            "buttonText": "Doorgaan met TileRun",
-            "autoRegister": True,
-            "autoLaunch": True,
-            "mobileOverrideEnabled": True,
-            "mobileRedirectUri": "https://foto.tilerun.net/api/oauth/mobile-redirect",
-            "signingAlgorithm": "RS256",
-            "profileSigningAlgorithm": "none",
-            "tokenEndpointAuthMethod": "client_secret_post",
-            "roleClaim": "immich_role",
-        },
+        "oauth": oauth,
         "passwordLogin": {"enabled": password_login},
         "server": {
             "externalDomain": required(values, "TILERUN_FOTO_EXTERNAL_URL"),
@@ -93,6 +102,7 @@ def main() -> None:
     except OSError:
         pass
     print(f"Configuratie geschreven: {output}")
+    print(f"OAuth: {'aan' if oauth_enabled else 'uit (lokale bootstrap)'}")
     print(f"Wachtwoordlogin: {'aan (bootstrap)' if password_login else 'uit (SSO-only)'}")
 
 
