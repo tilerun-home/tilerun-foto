@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { focusTrap } from '$lib/actions/focus-trap';
   import { authManager } from '$lib/managers/auth-manager.svelte';
@@ -25,13 +26,22 @@
   onMount(async () => {
     info = userInteraction.aboutInfo ?? (await getAboutInfo());
   });
+
+  const navigateAndClose = async (event: MouseEvent, href: string) => {
+    event.preventDefault();
+    try {
+      await goto(href);
+    } finally {
+      onClose?.();
+    }
+  };
 </script>
 
 <div
   in:fade={{ duration: 100 }}
   out:fade={{ duration: 100 }}
   id="account-info-panel"
-  class="absolute inset-e-6 top-19 z-1 w-[min(360px,100vw-50px)] rounded-3xl bg-gray-200 shadow-lg dark:border dark:border-immich-dark-gray dark:bg-immich-dark-gray"
+  class="absolute inset-e-6 top-19 z-50 w-[min(360px,100vw-50px)] rounded-3xl bg-gray-200 shadow-lg dark:border dark:border-immich-dark-gray dark:bg-immich-dark-gray"
   use:focusTrap
 >
   <div
@@ -63,7 +73,7 @@
     <div class="flex flex-col gap-1">
       <Button
         href={Route.userSettings()}
-        onclick={onClose}
+        onclick={(event) => navigateAndClose(event, Route.userSettings())}
         size="small"
         color="secondary"
         variant="ghost"
@@ -78,7 +88,7 @@
       {#if authManager.user.isAdmin}
         <Button
           href={Route.systemSettings()}
-          onclick={onClose}
+          onclick={(event) => navigateAndClose(event, Route.systemSettings())}
           shape="round"
           variant="ghost"
           size="small"
@@ -99,6 +109,7 @@
     <Button
       class="m-1 mx-4 rounded-none rounded-b-3xl bg-white p-3 dark:bg-immich-dark-primary/10"
       href={Route.logout()}
+      onclick={(event) => navigateAndClose(event, Route.logout())}
       leadingIcon={mdiLogout}
       variant="ghost"
       color="secondary">{$t('sign_out')}</Button
@@ -108,10 +119,9 @@
       type="button"
       class="mt-4 text-center text-xs text-primary underline"
       onclick={async () => {
+        const aboutInfo = info ?? userInteraction.aboutInfo ?? (await getAboutInfo());
         onClose?.();
-        if (info) {
-          await modalManager.show(HelpAndFeedbackModal, { info });
-        }
+        await modalManager.show(HelpAndFeedbackModal, { info: aboutInfo });
       }}
     >
       {$t('support_and_feedback')}
