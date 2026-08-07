@@ -22,6 +22,7 @@
     CommandPaletteProvider,
     CORE_PAGE_COMMANDS,
     defaultProvider,
+    logoManager,
     MOBILE_APP_COMMANDS,
     modalManager,
     OTHER_SITE_COMMANDS,
@@ -166,6 +167,11 @@
   let { children }: Props = $props();
 
   let showNavigationLoadingBar = $state(false);
+
+  logoManager.setLogo({
+    ...logoManager.logos,
+    icon: '/tilerun-foto-logo-v2.svg',
+  });
 
   toastManager.setOptions({ class: 'top-16 fixed' });
 
