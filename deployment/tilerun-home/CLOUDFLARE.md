@@ -11,6 +11,10 @@ Gebruik deze redirect-URI's:
 
 Gebruik scopes `openid email profile`. Zet de door Cloudflare verstrekte issuer en client-ID in `.env`. De TileRun Access-worker beheert de groep `TileRun / Foto gebruikers`; koppel uitsluitend die groep aan de SaaS-app. De sectiesleutel is `foto` en het interne rechtpad is `/foto`.
 
+Als Cloudflare de aangepaste mobiele URI `app.immich:///oauth-callback` weigert, registreer dan uitsluitend de HTTPS-callback `https://foto.tilerun.net/api/oauth/mobile-redirect`. De gegenereerde Immich-configuratie gebruikt deze route als mobiele redirect-override.
+
+Activeer SSO op de NAS na het aanmaken van de SaaS-app met `sudo sh scripts/enable-tilerun-sso.sh`. Het script vraagt Client ID en Client secret interactief op, toont het secret niet, maakt zo nodig het technische interne beheerprofiel aan en schakelt daarna wachtwoordlogin uit.
+
 Voeg `cloudflared.example.yml` als ingress toe aan de bestaande Tunnel. Het origin is rechtstreeks `http://192.168.1.2:2283`; maak geen `/foto`-route en geen router-portforwarding. Cloudflare Tunnel transporteert WebSockets automatisch. Controleer vóór acceptatie de uploadlimiet van het actieve Cloudflare-abonnement met een testvideo die groter is dan een normale foto.
 
 Na de eerste SSO-login van de TileRun-superbeheerder:

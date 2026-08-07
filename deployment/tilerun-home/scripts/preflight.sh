@@ -63,9 +63,14 @@ case "${TILERUN_FOTO_REQUIRE_PUBLIC_EDGE:-true}" in
       nslookup foto.tilerun.net >/dev/null 2>&1 || fail "DNS voor foto.tilerun.net resolveert niet."
       note "publieke DNS resolveert"
     fi
-    docker ps --format '{{.Names}}' | grep -Eq 'cloudflared|cloudflare.*tunnel' \
-      || fail "Geen actieve Cloudflare Tunnel-container gevonden."
-    note "Cloudflare Tunnel actief"
+    if docker ps --format '{{.Names}}' | grep -Eq 'cloudflared|cloudflare.*tunnel'; then
+      note "Cloudflare Tunnel-container actief"
+    elif command -v curl >/dev/null 2>&1 && \
+      curl -fsS --max-time 15 https://foto.tilerun.net/api/server/ping >/dev/null; then
+      note "Cloudflare Tunnel via publieke Foto-route actief"
+    else
+      fail "Cloudflare Tunnel is niet lokaal zichtbaar en de publieke Foto-route is onbereikbaar."
+    fi
     ;;
   *) printf 'WAARSCHUWING: lokale bootstrap; publieke DNS en Tunnel worden nog niet gecontroleerd.\n' >&2 ;;
 esac
