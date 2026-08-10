@@ -7,18 +7,19 @@
   import { clickOutside } from '$lib/actions/click-outside';
   import NotificationPanel from '$lib/components/shared-components/navigation-bar/NotificationPanel.svelte';
   import SearchBar from '$lib/components/shared-components/search-bar/SearchBar.svelte';
-  import TileRunFotoLinks from '$lib/components/TileRunFotoLinks.svelte';
   import TileRunFotoLogo from '$lib/components/TileRunFotoLogo.svelte';
+  import TileRunFotoMenu from '$lib/components/TileRunFotoMenu.svelte';
   import SkipLink from '$lib/elements/SkipLink.svelte';
   import { authManager } from '$lib/managers/auth-manager.svelte';
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
+  import { tileRunProfileManager } from '$lib/managers/tilerun-profile-manager.svelte';
   import { Route } from '$lib/route';
   import { getGlobalActions } from '$lib/services/app.service';
   import { mediaQueryManager } from '$lib/stores/media-query-manager.svelte';
   import { notificationManager } from '$lib/stores/notification-manager.svelte';
   import { sidebarStore } from '$lib/stores/sidebar.svelte';
   import { ActionButton, Button, IconButton } from '@immich/ui';
-  import { mdiBellBadge, mdiBellOutline, mdiMagnify, mdiMenu, mdiTrayArrowUp } from '@mdi/js';
+  import { mdiBellBadge, mdiBellOutline, mdiHomeOutline, mdiMagnify, mdiMenu, mdiTrayArrowUp } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import ThemeButton from '../ThemeButton.svelte';
@@ -82,6 +83,8 @@
         <TileRunFotoLogo
           variant={mediaQueryManager.isFullSidebar ? 'inline' : 'icon'}
           size={mediaQueryManager.isFullSidebar ? 'medium' : 'small'}
+          primaryLabel={tileRunProfileManager.profile?.home_name || 'TileRun'}
+          secondaryLabel="TileRun FOTO"
           class="max-md:h-10"
         />
       </a>
@@ -94,9 +97,24 @@
       </div>
 
       <section class="flex w-full place-items-center justify-end gap-1 sm:w-auto md:gap-2">
-        <div class="hidden xl:block">
-          <TileRunFotoLinks />
-        </div>
+        <a
+          href="https://tilerun.net"
+          rel="external"
+          class="hidden whitespace-nowrap px-2 py-2 font-semibold text-primary hover:underline xl:inline-flex"
+        >
+          TileRun Home
+        </a>
+        <IconButton
+          color="secondary"
+          shape="round"
+          variant="ghost"
+          size="medium"
+          icon={mdiHomeOutline}
+          href="https://tilerun.net"
+          aria-label="TileRun Home"
+          class="xl:hidden"
+        />
+        <TileRunFotoMenu />
         {#if featureFlagsManager.value.search}
           <IconButton
             color="secondary"
