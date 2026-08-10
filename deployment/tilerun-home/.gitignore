@@ -6,3 +6,4 @@ backups/*
 !backups/.gitkeep
 __pycache__/
 *.pyc
+local-overlay/

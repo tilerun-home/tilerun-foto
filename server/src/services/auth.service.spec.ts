@@ -3,9 +3,11 @@ import { DateTime } from 'luxon';
 import { SALT_ROUNDS } from 'src/constants';
 import { UserAdmin } from 'src/database';
 import { AuthDto, SignUpDto } from 'src/dtos/auth.dto';
-import { AuthType, Permission } from 'src/enum';
+import { AuthType, Permission, UserMetadataKey } from 'src/enum';
 import { AuthService } from 'src/services/auth.service';
 import { UserMetadataItem } from 'src/types';
+import { validateCloudflareAccessJwt } from 'src/utils/cloudflare-access';
+import { getTileRunProfile } from 'src/utils/tilerun-profile';
 import { ApiKeyFactory } from 'test/factories/api-key.factory';
 import { AuthFactory } from 'test/factories/auth.factory';
 import { OAuthProfileFactory } from 'test/factories/oauth-profile.factory';
@@ -16,6 +18,9 @@ import { systemConfigStub } from 'test/fixtures/system-config.stub';
 import { userStub } from 'test/fixtures/user.stub';
 import { newUuid } from 'test/small.factory';
 import { newTestService, ServiceMocks } from 'test/utils';
+
+vi.mock('src/utils/cloudflare-access', () => ({ validateCloudflareAccessJwt: vi.fn() }));
+vi.mock('src/utils/tilerun-profile', () => ({ getTileRunProfile: vi.fn() }));
 
 const email = 'test@immich.com';
 const loginDetails = {
@@ -40,6 +45,20 @@ describe(AuthService.name, () => {
 
     mocks.oauth.authorize.mockResolvedValue({ url: 'http://test', state: 'state', codeVerifier: 'codeVerifier' });
     mocks.oauth.getLogoutEndpoint.mockResolvedValue('http://end-session-endpoint');
+    vi.mocked(validateCloudflareAccessJwt).mockResolvedValue({ email, subject: 'cloudflare-user-id' });
+    vi.mocked(getTileRunProfile).mockResolvedValue({
+      user_id: 1,
+      email,
+      display_name: 'TileRun gebruiker',
+      preferred_language: null,
+      effective_language: 'nl',
+      home_name: 'TileRun Home',
+      home_default_language: 'nl',
+      home_version: 1,
+      avatar_url: null,
+      avatar_version: 0,
+      version: 1,
+    });
   });
 
   it('should be defined', () => {
@@ -703,6 +722,42 @@ describe(AuthService.name, () => {
     });
   });
 
+  describe('loginWithTileRunAccess', () => {
+    it('should reject an invalid Cloudflare Access assertion', async () => {
+      vi.mocked(validateCloudflareAccessJwt).mockRejectedValue(new Error('invalid assertion'));
+
+      await expect(sut.loginWithTileRunAccess('invalid', loginDetails)).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(getTileRunProfile).not.toHaveBeenCalled();
+    });
+
+    it('should create a Foto session and skip onboarding for an existing centrally managed TileRun profile', async () => {
+      const user = UserFactory.create({ email, name: 'Oude naam' });
+      const updatedUser = { ...user, name: 'TileRun gebruiker' };
+      mocks.user.getByEmail.mockResolvedValue(user);
+      mocks.user.update.mockResolvedValue(updatedUser);
+      mocks.session.create.mockResolvedValue(SessionFactory.create());
+
+      await expect(sut.loginWithTileRunAccess('signed-access-jwt', loginDetails)).resolves.toEqual(
+        expect.objectContaining({
+          accessToken: 'cmFuZG9tLWJ5dGVz',
+          userId: user.id,
+          userEmail: email,
+          name: 'TileRun gebruiker',
+          isOnboarded: true,
+        }),
+      );
+
+      expect(validateCloudflareAccessJwt).toHaveBeenCalledWith('signed-access-jwt');
+      expect(getTileRunProfile).toHaveBeenCalledWith(email);
+      expect(mocks.user.update).toHaveBeenCalledWith(user.id, { name: 'TileRun gebruiker' });
+      expect(mocks.user.upsertMetadata).toHaveBeenCalledWith(user.id, {
+        key: UserMetadataKey.Onboarding,
+        value: { isOnboarded: true },
+      });
+      expect(mocks.session.create).toHaveBeenCalledWith(expect.objectContaining({ userId: user.id }));
+    });
+  });
+
   describe('callback', () => {
     it('should throw an error if OAuth is not enabled', async () => {
       await expect(
@@ -1018,15 +1073,18 @@ describe(AuthService.name, () => {
         loginDetails,
       );
 
+      const expectedProfilePath = `/data/profile/${user.id}/${fileId}.webp`;
       expect(mocks.user.update).toHaveBeenCalledWith(user.id, {
-        profileImagePath: expect.stringContaining(`/data/profile/${user.id}/${fileId}.webp`),
+        profileImagePath: expect.stringMatching(
+          new RegExp(expectedProfilePath.replaceAll('/', String.raw`[\\/]`) + '$'),
+        ),
         profileChangedAt: expect.any(Date),
       });
       expect(mocks.oauth.getProfilePicture).toHaveBeenCalledWith(profile.picture);
       expect(mocks.media.generateThumbnail).toHaveBeenCalledWith(
         Buffer.from(pictureBytes.buffer, pictureBytes.byteOffset, pictureBytes.byteLength),
         expect.objectContaining({ format: 'webp', processInvalidImages: false }),
-        expect.stringContaining(`/data/profile/${user.id}/${fileId}.webp`),
+        expect.stringMatching(new RegExp(expectedProfilePath.replaceAll('/', String.raw`[\\/]`) + '$')),
       );
     });
 

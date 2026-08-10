@@ -73,7 +73,7 @@
     <div class="flex flex-col gap-1">
       <Button
         href={Route.userSettings()}
-        onclick={(event) => navigateAndClose(event, Route.userSettings())}
+        onclick={(event: MouseEvent) => navigateAndClose(event, Route.userSettings())}
         size="small"
         color="secondary"
         variant="ghost"
@@ -88,7 +88,7 @@
       {#if authManager.user.isAdmin}
         <Button
           href={Route.systemSettings()}
-          onclick={(event) => navigateAndClose(event, Route.systemSettings())}
+          onclick={(event: MouseEvent) => navigateAndClose(event, Route.systemSettings())}
           shape="round"
           variant="ghost"
           size="small"
@@ -109,7 +109,7 @@
     <Button
       class="m-1 mx-4 rounded-none rounded-b-3xl bg-white p-3 dark:bg-immich-dark-primary/10"
       href={Route.logout()}
-      onclick={(event) => navigateAndClose(event, Route.logout())}
+      onclick={(event: MouseEvent) => navigateAndClose(event, Route.logout())}
       leadingIcon={mdiLogout}
       variant="ghost"
       color="secondary">{$t('sign_out')}</Button

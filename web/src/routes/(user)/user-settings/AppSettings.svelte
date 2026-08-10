@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { ComboBoxOption } from '$lib/components/shared-components/Combobox.svelte';
   import SettingCombobox from './SettingCombobox.svelte';
-  import SettingsLanguageSelector from '$lib/components/shared-components/settings/SettingsLanguageSelector.svelte';
   import { fallbackLocale, locales } from '$lib/constants';
   import {
     alwaysLoadOriginalFile,
@@ -70,8 +69,6 @@
           onCheckedChange={handleToggleSystemTheme}
         />
       </Field>
-
-      <SettingsLanguageSelector showSettingDescription />
 
       <Field label={$t('use_browser_locale')} description={$t('use_browser_locale_description')}>
         <Switch checked={$locale == 'default'} onCheckedChange={handleToggleLocaleBrowser} />

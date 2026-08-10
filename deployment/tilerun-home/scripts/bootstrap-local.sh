@@ -22,6 +22,10 @@ if [ ! -s secrets/db_password ]; then
 fi
 
 chmod 600 secrets/db_password
+[ -s "${TILERUN_PROFILE_SECRET_PATH:-/volume1/docker/projects/test-webapp/state/secrets/foto_profile_secret}" ] || {
+  printf 'FOUT: centraal TileRun-profielsecret ontbreekt. Voer eerst sudo sh /volume1/docker/projects/test-webapp/deploy.sh core uit.\n' >&2
+  exit 1
+}
 chmod 700 scripts/*.sh
 python3 scripts/render-config.py
 

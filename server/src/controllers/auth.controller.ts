@@ -49,6 +49,29 @@ export class AuthController {
     });
   }
 
+  @Get('tilerun-access')
+  @Endpoint({
+    summary: 'Login with TileRun Access',
+    description: 'Create a Foto session from a validated Cloudflare Access application assertion and open Foto.',
+  })
+  async loginWithTileRunAccess(
+    @Req() request: Request,
+    @Res() res: Response,
+    @GetLoginDetails() loginDetails: LoginDetails,
+  ): Promise<void> {
+    const assertion = request.header('Cf-Access-Jwt-Assertion');
+    const body = await this.service.loginWithTileRunAccess(assertion, loginDetails);
+    respondWithCookie(res, body, {
+      isSecure: loginDetails.isSecure,
+      values: [
+        { key: ImmichCookie.AccessToken, value: body.accessToken },
+        { key: ImmichCookie.AuthType, value: AuthType.Password },
+        { key: ImmichCookie.IsAuthenticated, value: 'true' },
+      ],
+    });
+    res.redirect(HttpStatus.FOUND, '/photos');
+  }
+
   @Post('admin-sign-up')
   @Endpoint({
     summary: 'Register admin',

@@ -11,8 +11,13 @@ services:
       IMMICH_CONFIG_FILE: /config/immich.json
       IMMICH_MACHINE_LEARNING_URL: http://foto-machine-learning:3003
       IMMICH_LOG_LEVEL: log
+      TILERUN_PROFILE_API_URL: ${TILERUN_PROFILE_API_URL}
+      TILERUN_PROFILE_SECRET_FILE: /run/secrets/tilerun_profile_secret
+      TILERUN_CF_ACCESS_ISSUER: ${TILERUN_CF_ACCESS_ISSUER:-}
+      TILERUN_CF_ACCESS_AUD: ${TILERUN_CF_ACCESS_AUD:-}
     secrets:
       - db_password
+      - tilerun_profile_secret
     volumes:
       - ${UPLOAD_LOCATION}:/data
       - ./runtime/immich.json:/config/immich.json:ro
@@ -96,3 +101,5 @@ networks:
 secrets:
   db_password:
     file: ./secrets/db_password
+  tilerun_profile_secret:
+    file: ${TILERUN_PROFILE_SECRET_PATH}
