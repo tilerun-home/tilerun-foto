@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { SALT_ROUNDS } from 'src/constants';
+import { SALT_ROUNDS, TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { AssetStatsDto, AssetStatsResponseDto, mapStats } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { CalendarHeatmapDto, CalendarHeatmapResponseDto } from 'src/dtos/calendar-heatmap.dto';
@@ -110,7 +110,7 @@ export class UserAdminService extends BaseService {
     }
 
     const albumName = `Gezin \u00b7 ${home.name}`;
-    const marker = `TileRun Home: ${home.id}`;
+    const marker = `${TILERUN_HOME_ALBUM_MARKER_PREFIX}${home.id}`;
     const ownedAlbums = await this.albumRepository.getAll(owner.id, { isOwned: true });
     const markedAlbums = ownedAlbums
       .filter(({ description }) => description?.split('\n').includes(marker))

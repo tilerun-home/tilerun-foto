@@ -44,6 +44,7 @@ export const VECTOR_INDEX_TABLES = {
 export const VECTORCHORD_LIST_SLACK_FACTOR = 1.2;
 
 export const SALT_ROUNDS = 10;
+export const TILERUN_HOME_ALBUM_MARKER_PREFIX = 'TileRun Home: ';
 // Syntactically valid bcrypt hash used in login() preventing timing-based user enumeration.
 export const LOGIN_DUMMY_HASH = '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZabcde';
 

@@ -212,9 +212,11 @@ export function mapFaces(
   auth: AuthDto,
   edits?: AssetEditActionItem[],
   assetDimensions?: ImageDimensions,
+  includeSharedPerson = false,
 ): AssetFaceResponseDto {
   return {
     ...mapFacesWithoutPerson(face, edits, assetDimensions),
-    person: face.person?.ownerId === auth.user.id ? mapPerson(face.person) : null,
+    person:
+      face.person && (face.person.ownerId === auth.user.id || includeSharedPerson) ? mapPerson(face.person) : null,
   };
 }
