@@ -51,6 +51,7 @@ const MergePersonSchema = z
 const PersonSearchSchema = z
   .object({
     withHidden: stringToBool.optional().describe('Include hidden people'),
+    includeShared: stringToBool.optional().describe('Include people from the managed TileRun family album'),
     closestPersonId: z.uuidv4().optional().describe('Closest person ID for similarity search'),
     closestAssetId: z.uuidv4().optional().describe('Closest asset ID for similarity search'),
     page: z.coerce.number().int().min(1).default(1).describe('Page number for pagination'),
@@ -83,6 +84,7 @@ export const PersonResponseSchema = z
       .optional()
       .describe('Person color (hex)')
       .meta(new HistoryBuilder().added('v1.126.0').stable('v2').getExtensions()),
+    isShared: z.boolean().optional().describe('Person inherited from a shared TileRun family photo'),
   })
   .meta({ id: 'PersonResponseDto' });
 
@@ -171,7 +173,7 @@ const PeopleResponseSchema = z
   .describe('People response');
 export class PeopleResponseDto extends createZodDto(PeopleResponseSchema) {}
 
-export function mapPerson(person: MaybeDehydrated<Person>): PersonResponseDto {
+export function mapPerson(person: MaybeDehydrated<Person>, isShared = false): PersonResponseDto {
   return {
     id: person.id,
     name: person.name,
@@ -181,6 +183,7 @@ export function mapPerson(person: MaybeDehydrated<Person>): PersonResponseDto {
     isFavorite: person.isFavorite,
     color: person.color ?? undefined,
     updatedAt: asDateTimeString(person.updatedAt),
+    ...(isShared ? { isShared: true } : {}),
   };
 }
 

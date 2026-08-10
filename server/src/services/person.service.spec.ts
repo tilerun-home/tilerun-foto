@@ -86,6 +86,30 @@ describe(PersonService.name, () => {
         withHidden: false,
       });
     });
+
+    it('should mark people inherited from the TileRun family album as shared', async () => {
+      const auth = AuthFactory.create();
+      const ownPerson = PersonFactory.create({ ownerId: auth.user.id, name: 'Manuel Bolsius' });
+      const sharedPerson = PersonFactory.create({ ownerId: newUuid(), name: 'Caroline Bolsius' });
+      mocks.person.getAllForUser.mockResolvedValue({ items: [ownPerson, sharedPerson], hasNextPage: false });
+      mocks.person.getNumberOfPeople.mockResolvedValue({ total: 2, hidden: 0 });
+
+      const result = await sut.getAll(auth, {
+        withHidden: false,
+        includeShared: true,
+        page: 1,
+        size: 10,
+      });
+
+      expect(result.people[0]).toEqual(expect.objectContaining({ id: ownPerson.id }));
+      expect(result.people[0]).not.toHaveProperty('isShared');
+      expect(result.people[1]).toEqual(expect.objectContaining({ id: sharedPerson.id, isShared: true }));
+      expect(mocks.person.getAllForUser).toHaveBeenCalledWith({ skip: 0, take: 10 }, auth.user.id, {
+        withHidden: false,
+        includeShared: true,
+      });
+      expect(mocks.person.getNumberOfPeople).toHaveBeenCalledWith(auth.user.id, { includeShared: true });
+    });
   });
 
   describe('getById', () => {
@@ -161,6 +185,22 @@ describe(PersonService.name, () => {
         }),
       );
       expect(mocks.access.person.checkOwnerAccess).toHaveBeenCalledWith(auth.user.id, new Set([person.id]));
+    });
+
+    it('should serve a person thumbnail inherited through the TileRun family album', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ ownerId: newUuid() });
+      mocks.person.getById.mockResolvedValue(person);
+      mocks.access.person.checkTileRunFamilyAccess.mockResolvedValue(new Set([person.id]));
+
+      await expect(sut.getThumbnail(auth, person.id)).resolves.toEqual(
+        new ImmichFileResponse({
+          path: person.thumbnailPath,
+          contentType: 'image/jpeg',
+          cacheControl: CacheControl.PrivateWithoutCache,
+        }),
+      );
+      expect(mocks.access.person.checkTileRunFamilyAccess).toHaveBeenCalledWith(auth.user.id, new Set([person.id]));
     });
   });
 

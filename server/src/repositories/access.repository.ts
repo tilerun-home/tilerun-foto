@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Kysely, NotNull, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
+import { TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
 import { AlbumUserRole, AssetVisibility } from 'src/enum';
 import { DB } from 'src/schema';
@@ -435,6 +436,30 @@ class PersonAccess {
       .select('person.id')
       .where('person.id', 'in', [...personIds])
       .where('person.ownerId', '=', userId)
+      .execute()
+      .then((persons) => new Set(persons.map((person) => person.id)));
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkTileRunFamilyAccess(userId: string, personIds: Set<string>) {
+    if (personIds.size === 0) {
+      return new Set<string>();
+    }
+
+    return this.db
+      .selectFrom('person')
+      .select('person.id')
+      .innerJoin('asset_face', 'asset_face.personId', 'person.id')
+      .innerJoin('album_asset', 'album_asset.assetId', 'asset_face.assetId')
+      .innerJoin('album', 'album.id', 'album_asset.albumId')
+      .innerJoin('album_user', 'album_user.albumId', 'album.id')
+      .where('person.id', 'in', [...personIds])
+      .where('album_user.userId', '=', userId)
+      .where('album.deletedAt', 'is', null)
+      .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`)
+      .where('asset_face.deletedAt', 'is', null)
+      .where('asset_face.isVisible', '=', true)
       .execute()
       .then((persons) => new Set(persons.map((person) => person.id)));
   }

@@ -49,7 +49,7 @@ import { Point, transformPoints } from 'src/utils/transform';
 @Injectable()
 export class PersonService extends BaseService {
   async getAll(auth: AuthDto, dto: PersonSearchDto): Promise<PeopleResponseDto> {
-    const { withHidden = false, closestAssetId, closestPersonId, page, size } = dto;
+    const { withHidden = false, includeShared = false, closestAssetId, closestPersonId, page, size } = dto;
     let closestFaceAssetId = closestAssetId;
     const pagination = {
       take: size,
@@ -66,11 +66,15 @@ export class PersonService extends BaseService {
     const { items, hasNextPage } = await this.personRepository.getAllForUser(pagination, auth.user.id, {
       withHidden,
       closestFaceAssetId,
+      ...(includeShared ? { includeShared: true } : {}),
     });
-    const { total, hidden } = await this.personRepository.getNumberOfPeople(auth.user.id);
+    const { total, hidden } = await this.personRepository.getNumberOfPeople(
+      auth.user.id,
+      includeShared ? { includeShared: true } : undefined,
+    );
 
     return {
-      people: items.map((person) => mapPerson(person)),
+      people: items.map((person) => mapPerson(person, person.ownerId !== auth.user.id)),
       hasNextPage,
       total,
       hidden,

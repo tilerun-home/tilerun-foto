@@ -14,6 +14,7 @@ import {
 import { jsonArrayFrom } from 'kysely/helpers/postgres';
 import { isEmpty, isUndefined, omitBy } from 'lodash';
 import { InjectKysely } from 'nestjs-kysely';
+import { TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { LockableProperty, Stack } from 'src/database';
 import { Chunked, ChunkedArray, DummyValue, GenerateSql } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -951,12 +952,32 @@ export class AssetRepository {
 
   @GenerateSql({ params: [DummyValue.UUID, { minAssetsPerField: 5, maxFields: 12 }] })
   async getAssetIdByCity(ownerId: string, { minAssetsPerField, maxFields }: AssetExploreFieldOptions) {
+    const canExplore = (eb: ExpressionBuilder<DB, 'asset' | 'asset_exif'>) =>
+      eb.or([
+        eb('asset.ownerId', '=', asUuid(ownerId)),
+        eb.exists(
+          eb
+            .selectFrom('album_asset')
+            .innerJoin('album', 'album.id', 'album_asset.albumId')
+            .innerJoin('album_user', 'album_user.albumId', 'album.id')
+            .select('album.id')
+            .whereRef('album_asset.assetId', '=', 'asset.id')
+            .where('album_user.userId', '=', ownerId)
+            .where('album.deletedAt', 'is', null)
+            .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+        ),
+      ]);
     const items = await this.db
       .with('cities', (qb) =>
         qb
           .selectFrom('asset_exif')
+          .innerJoin('asset', 'asset.id', 'asset_exif.assetId')
           .select('city')
           .where('city', 'is not', null)
+          .where(canExplore)
+          .where('asset.visibility', '=', AssetVisibility.Timeline)
+          .where('asset.type', '=', AssetType.Image)
+          .where('asset.deletedAt', 'is', null)
           .groupBy('city')
           .having((eb) => eb.fn('count', [eb.ref('assetId')]), '>=', minAssetsPerField),
       )
@@ -966,7 +987,7 @@ export class AssetRepository {
       .distinctOn('asset_exif.city')
       .select(['assetId as data', 'asset_exif.city as value'])
       .$narrowType<{ value: NotNull }>()
-      .where('ownerId', '=', asUuid(ownerId))
+      .where(canExplore)
       .where('visibility', '=', AssetVisibility.Timeline)
       .where('type', '=', AssetType.Image)
       .where('deletedAt', 'is', null)
@@ -981,7 +1002,22 @@ export class AssetRepository {
     const items = await this.db
       .selectFrom('asset')
       .select(['id as data', 'createdAt as value'])
-      .where('ownerId', '=', asUuid(ownerId))
+      .where((eb) =>
+        eb.or([
+          eb('asset.ownerId', '=', asUuid(ownerId)),
+          eb.exists(
+            eb
+              .selectFrom('album_asset')
+              .innerJoin('album', 'album.id', 'album_asset.albumId')
+              .innerJoin('album_user', 'album_user.albumId', 'album.id')
+              .select('album.id')
+              .whereRef('album_asset.assetId', '=', 'asset.id')
+              .where('album_user.userId', '=', ownerId)
+              .where('album.deletedAt', 'is', null)
+              .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+          ),
+        ]),
+      )
       .where('asset.visibility', '=', AssetVisibility.Timeline)
       .where('type', '=', AssetType.Image)
       .where('deletedAt', 'is', null)
