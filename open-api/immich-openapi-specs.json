@@ -8847,7 +8847,7 @@
             "name": "includeShared",
             "required": false,
             "in": "query",
-            "description": "Include people from the managed TileRun family album",
+            "description": "Include people from albums shared with the current user",
             "schema": {
               "type": "boolean"
             }
@@ -21293,7 +21293,7 @@
             "type": "boolean"
           },
           "isShared": {
-            "description": "Person inherited from a shared TileRun family photo",
+            "description": "Person inherited from an album shared with the current user",
             "type": "boolean"
           },
           "name": {

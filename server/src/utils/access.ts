@@ -290,8 +290,8 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
 
     case Permission.PersonRead: {
       const isOwner = await access.person.checkOwnerAccess(auth.user.id, ids);
-      const isFamily = await access.person.checkTileRunFamilyAccess(auth.user.id, ids);
-      return setUnion(isOwner, isFamily);
+      const isShared = await access.person.checkSharedAlbumAccess(auth.user.id, ids);
+      return setUnion(isOwner, isShared);
     }
     case Permission.PersonUpdate:
     case Permission.PersonDelete:

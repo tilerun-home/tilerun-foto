@@ -51,7 +51,7 @@ const MergePersonSchema = z
 const PersonSearchSchema = z
   .object({
     withHidden: stringToBool.optional().describe('Include hidden people'),
-    includeShared: stringToBool.optional().describe('Include people from the managed TileRun family album'),
+    includeShared: stringToBool.optional().describe('Include people from albums shared with the current user'),
     closestPersonId: z.uuidv4().optional().describe('Closest person ID for similarity search'),
     closestAssetId: z.uuidv4().optional().describe('Closest asset ID for similarity search'),
     page: z.coerce.number().int().min(1).default(1).describe('Page number for pagination'),
@@ -84,7 +84,7 @@ export const PersonResponseSchema = z
       .optional()
       .describe('Person color (hex)')
       .meta(new HistoryBuilder().added('v1.126.0').stable('v2').getExtensions()),
-    isShared: z.boolean().optional().describe('Person inherited from a shared TileRun family photo'),
+    isShared: z.boolean().optional().describe('Person inherited from an album shared with the current user'),
   })
   .meta({ id: 'PersonResponseDto' });
 

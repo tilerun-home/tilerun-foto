@@ -14,7 +14,6 @@ import {
 import { jsonArrayFrom } from 'kysely/helpers/postgres';
 import { isEmpty, isUndefined, omitBy } from 'lodash';
 import { InjectKysely } from 'nestjs-kysely';
-import { TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { LockableProperty, Stack } from 'src/database';
 import { Chunked, ChunkedArray, DummyValue, GenerateSql } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -963,8 +962,7 @@ export class AssetRepository {
             .select('album.id')
             .whereRef('album_asset.assetId', '=', 'asset.id')
             .where('album_user.userId', '=', ownerId)
-            .where('album.deletedAt', 'is', null)
-            .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+            .where('album.deletedAt', 'is', null),
         ),
       ]);
     const items = await this.db
@@ -1013,8 +1011,7 @@ export class AssetRepository {
               .select('album.id')
               .whereRef('album_asset.assetId', '=', 'asset.id')
               .where('album_user.userId', '=', ownerId)
-              .where('album.deletedAt', 'is', null)
-              .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+              .where('album.deletedAt', 'is', null),
           ),
         ]),
       )

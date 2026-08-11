@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Insertable, Updateable } from 'kysely';
-import { JOBS_ASSET_PAGINATION_SIZE, TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
+import { JOBS_ASSET_PAGINATION_SIZE } from 'src/constants';
 import { Person } from 'src/database';
 import { Chunked, OnJob } from 'src/decorators';
 import { BulkIdErrorReason, BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
@@ -136,13 +136,11 @@ export class PersonService extends BaseService {
     let includeSharedPeople = false;
 
     // Immich normally keeps face labels private to the asset owner. TileRun deliberately
-    // carries those labels with photos placed in its managed family album, but never with
-    // ordinary albums or public shared links.
+    // carries those labels with photos explicitly shared through an album, but never with
+    // public shared links or assets the viewer cannot otherwise access.
     if (hasForeignPeople && !auth.sharedLink) {
       const albums = await this.albumRepository.getByAssetId(auth.user.id, dto.id);
-      includeSharedPeople = albums.some(({ description }) =>
-        description?.split('\n').some((line) => line.startsWith(TILERUN_HOME_ALBUM_MARKER_PREFIX)),
-      );
+      includeSharedPeople = albums.length > 0;
     }
 
     return faces.map((face) => mapFaces(face, auth, asset.edits, assetDimensions, includeSharedPeople));

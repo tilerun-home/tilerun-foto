@@ -841,7 +841,7 @@ export type PersonResponseDto = {
     isFavorite?: boolean;
     /** Is hidden */
     isHidden: boolean;
-    /** Person inherited from a shared TileRun family photo */
+    /** Person inherited from an album shared with the current user */
     isShared?: boolean;
     /** Person name */
     name: string;

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ExpressionBuilder, Insertable, Kysely, Selectable, sql, Updateable } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { InjectKysely } from 'nestjs-kysely';
-import { TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { AssetFace } from 'src/database';
 import { Chunked, ChunkedArray, DummyValue, GenerateSql } from 'src/decorators';
 import { AssetFileType, AssetVisibility, SourceType, UserMetadataKey } from 'src/enum';
@@ -173,8 +172,7 @@ export class PersonRepository {
                   .select('album.id')
                   .whereRef('album_asset.assetId', '=', 'asset_face.assetId')
                   .where('album_user.userId', '=', userId)
-                  .where('album.deletedAt', 'is', null)
-                  .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+                  .where('album.deletedAt', 'is', null),
               ),
             ])
           : eb('person.ownerId', '=', userId),
@@ -407,8 +405,7 @@ export class PersonRepository {
                         .select('album.id')
                         .whereRef('album_asset.assetId', '=', 'asset_face.assetId')
                         .where('album_user.userId', '=', userId)
-                        .where('album.deletedAt', 'is', null)
-                        .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`),
+                        .where('album.deletedAt', 'is', null),
                     ),
                   ])
                 : eb('person.ownerId', '=', userId),

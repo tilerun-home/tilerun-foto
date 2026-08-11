@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Kysely, NotNull, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
-import { TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
 import { AlbumUserRole, AssetVisibility } from 'src/enum';
 import { DB } from 'src/schema';
@@ -442,7 +441,7 @@ class PersonAccess {
 
   @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
   @ChunkedSet({ paramIndex: 1 })
-  async checkTileRunFamilyAccess(userId: string, personIds: Set<string>) {
+  async checkSharedAlbumAccess(userId: string, personIds: Set<string>) {
     if (personIds.size === 0) {
       return new Set<string>();
     }
@@ -457,7 +456,6 @@ class PersonAccess {
       .where('person.id', 'in', [...personIds])
       .where('album_user.userId', '=', userId)
       .where('album.deletedAt', 'is', null)
-      .where('album.description', 'like', `${TILERUN_HOME_ALBUM_MARKER_PREFIX}%`)
       .where('asset_face.deletedAt', 'is', null)
       .where('asset_face.isVisible', '=', true)
       .execute()
