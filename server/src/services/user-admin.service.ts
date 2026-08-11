@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { SALT_ROUNDS } from 'src/constants';
+import { SALT_ROUNDS, TILERUN_HOME_ALBUM_MARKER_PREFIX } from 'src/constants';
 import { AssetStatsDto, AssetStatsResponseDto, mapStats } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { CalendarHeatmapDto, CalendarHeatmapResponseDto } from 'src/dtos/calendar-heatmap.dto';
@@ -13,7 +13,7 @@ import {
   UserAdminUpdateDto,
   mapUserAdmin,
 } from 'src/dtos/user.dto';
-import { JobName, UserMetadataKey, UserStatus } from 'src/enum';
+import { AlbumUserRole, JobName, UserMetadataKey, UserStatus } from 'src/enum';
 import { UserFindOptions } from 'src/repositories/user.repository';
 import { BaseService } from 'src/services/base.service';
 import { getCalendarHeatmap } from 'src/services/shared/user-methods';
@@ -21,6 +21,163 @@ import { getPreferences, getPreferencesPartial, mergePreferences } from 'src/uti
 
 @Injectable()
 export class UserAdminService extends BaseService {
+  async syncTileRunUsers(dto: {
+    home?: { id: string; name: string };
+    users: { email: string; name: string; isAdmin?: boolean }[];
+    revoke: string[];
+  }): Promise<{
+    created: number;
+    updated: number;
+    unchanged: number;
+    sessionsRevoked: number;
+    missing: number;
+    familyAlbum: { id: string; name: string; created: boolean; membersAdded: number; membersRemoved: number } | null;
+  }> {
+    let created = 0;
+    let updated = 0;
+    let unchanged = 0;
+    let sessionsRevoked = 0;
+    let missing = 0;
+    const syncedUsers = [];
+
+    for (const item of dto.users) {
+      const email = item.email.trim().toLowerCase();
+      const existing = await this.userRepository.getByEmail(email);
+      if (!existing) {
+        const user = await this.createUser({ email, name: item.name.trim(), isAdmin: !!item.isAdmin });
+        await this.userRepository.upsertMetadata(user.id, {
+          key: UserMetadataKey.Onboarding,
+          value: { isOnboarded: true },
+        });
+        syncedUsers.push(user);
+        created++;
+        continue;
+      }
+
+      const changes: { name?: string; isAdmin?: boolean; updatedAt?: Date } = {};
+      if (existing.name !== item.name.trim()) {
+        changes.name = item.name.trim();
+      }
+      if (existing.isAdmin !== !!item.isAdmin) {
+        changes.isAdmin = !!item.isAdmin;
+      }
+      if (Object.keys(changes).length > 0) {
+        changes.updatedAt = new Date();
+        await this.userRepository.update(existing.id, changes);
+        updated++;
+      } else {
+        unchanged++;
+      }
+      await this.userRepository.upsertMetadata(existing.id, {
+        key: UserMetadataKey.Onboarding,
+        value: { isOnboarded: true },
+      });
+      syncedUsers.push(existing);
+    }
+
+    for (const rawEmail of dto.revoke) {
+      const user = await this.userRepository.getByEmail(rawEmail.trim().toLowerCase());
+      if (!user) {
+        missing++;
+        continue;
+      }
+      const sessions = await this.sessionRepository.getByUserId(user.id);
+      if (sessions.length === 0) {
+        continue;
+      }
+      await this.sessionRepository.invalidateAll({ userId: user.id });
+      for (const session of sessions) {
+        await this.eventRepository.emit('SessionDelete', { sessionId: session.id });
+      }
+      sessionsRevoked += sessions.length;
+    }
+
+    const familyAlbum = await this.syncTileRunFamilyAlbum(dto.home, syncedUsers);
+    return { created, updated, unchanged, sessionsRevoked, missing, familyAlbum };
+  }
+
+  private async syncTileRunFamilyAlbum(
+    home: { id: string; name: string } | undefined,
+    users: { id: string; isAdmin: boolean }[],
+  ): Promise<{ id: string; name: string; created: boolean; membersAdded: number; membersRemoved: number } | null> {
+    if (!home || users.length === 0) {
+      return null;
+    }
+
+    const owner = users.find(({ isAdmin }) => isAdmin) ?? (await this.userRepository.getAdmin());
+    if (!owner) {
+      throw new BadRequestException('TileRun family album requires an administrator');
+    }
+
+    const albumName = `Gezin \u00b7 ${home.name}`;
+    const marker = `${TILERUN_HOME_ALBUM_MARKER_PREFIX}${home.id}`;
+    const ownedAlbums = await this.albumRepository.getAll(owner.id, { isOwned: true });
+    const markedAlbums = ownedAlbums
+      .filter(({ description }) => description?.split('\n').includes(marker))
+      .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+    if (markedAlbums.length > 1) {
+      this.logger.warn(`Multiple TileRun family albums found for ${home.id}; using oldest album ${markedAlbums[0].id}`);
+    }
+    let album = markedAlbums[0];
+    let albumCreated = false;
+    if (!album) {
+      album = await this.albumRepository.create(
+        {
+          albumName,
+          description: `${marker}\nAlleen foto's die een gezinslid bewust aan dit album toevoegt, worden gedeeld.`,
+          albumThumbnailAssetId: null,
+        },
+        [],
+        [
+          { userId: owner.id, role: AlbumUserRole.Owner },
+          ...users.filter(({ id }) => id !== owner.id).map(({ id }) => ({ userId: id, role: AlbumUserRole.Editor })),
+        ],
+        owner.id,
+      );
+      albumCreated = true;
+    }
+
+    const detailed = albumCreated
+      ? album
+      : await this.albumRepository.getById(album.id, { withAssets: false }, owner.id);
+    if (!detailed) {
+      throw new BadRequestException('TileRun family album could not be loaded');
+    }
+    if (!albumCreated && detailed.albumName !== albumName) {
+      await this.albumRepository.update(detailed.id, { albumName }, owner.id);
+    }
+    const desiredIds = new Set(users.map(({ id }) => id));
+    const albumUsers = detailed.albumUsers ?? [];
+    const memberships = new Map(albumUsers.map(({ user, role }) => [user.id, role]));
+    let membersAdded = 0;
+    let membersRemoved = 0;
+
+    for (const user of users) {
+      if (user.id === owner.id) {
+        continue;
+      }
+      const role = memberships.get(user.id);
+      if (!role) {
+        await this.albumUserRepository.create({ albumId: detailed.id, userId: user.id, role: AlbumUserRole.Editor });
+        membersAdded++;
+      } else if (role !== AlbumUserRole.Editor) {
+        await this.albumUserRepository.update(
+          { albumId: detailed.id, userId: user.id },
+          { role: AlbumUserRole.Editor },
+        );
+      }
+    }
+
+    for (const { user, role } of albumUsers) {
+      if (role !== AlbumUserRole.Owner && !desiredIds.has(user.id)) {
+        await this.albumUserRepository.delete({ albumId: detailed.id, userId: user.id });
+        membersRemoved++;
+      }
+    }
+
+    return { id: detailed.id, name: albumName, created: albumCreated, membersAdded, membersRemoved };
+  }
+
   async search(auth: AuthDto, dto: UserAdminSearchDto): Promise<UserAdminResponseDto[]> {
     const users = await this.userRepository.getList({
       id: dto.id,
@@ -132,6 +289,15 @@ export class UserAdminService extends BaseService {
   async getSessions(auth: AuthDto, id: string): Promise<SessionResponseDto[]> {
     const sessions = await this.sessionRepository.getByUserId(id);
     return sessions.map((session) => mapSession(session));
+  }
+
+  async deleteSessions(id: string): Promise<void> {
+    await this.findOrFail(id, {});
+    const sessions = await this.sessionRepository.getByUserId(id);
+    await this.sessionRepository.invalidateAll({ userId: id });
+    for (const session of sessions) {
+      await this.eventRepository.emit('SessionDelete', { sessionId: session.id });
+    }
   }
 
   async getStatistics(auth: AuthDto, id: string, dto: AssetStatsDto): Promise<AssetStatsResponseDto> {

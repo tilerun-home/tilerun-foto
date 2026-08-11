@@ -15,6 +15,7 @@ import { paginationHelper, PaginationOptions } from 'src/utils/pagination';
 export interface PersonSearchOptions {
   withHidden: boolean;
   closestFaceAssetId?: string;
+  includeShared?: boolean;
 }
 
 export interface PersonNameSearchOptions {
@@ -159,7 +160,23 @@ export class PersonRepository {
           .on('asset.visibility', '=', sql.lit(AssetVisibility.Timeline))
           .on('asset.deletedAt', 'is', null),
       )
-      .where('person.ownerId', '=', userId)
+      .where((eb) =>
+        options?.includeShared
+          ? eb.or([
+              eb('person.ownerId', '=', userId),
+              eb.exists(
+                eb
+                  .selectFrom('album_asset')
+                  .innerJoin('album', 'album.id', 'album_asset.albumId')
+                  .innerJoin('album_user', 'album_user.albumId', 'album.id')
+                  .select('album.id')
+                  .whereRef('album_asset.assetId', '=', 'asset_face.assetId')
+                  .where('album_user.userId', '=', userId)
+                  .where('album.deletedAt', 'is', null),
+              ),
+            ])
+          : eb('person.ownerId', '=', userId),
+      )
       .where('asset_face.deletedAt', 'is', null)
       .where('asset_face.isVisible', 'is', true)
       .orderBy('person.isHidden', 'asc')
@@ -365,7 +382,7 @@ export class PersonRepository {
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })
-  getNumberOfPeople(userId: string) {
+  getNumberOfPeople(userId: string, options?: { includeShared?: boolean }) {
     const zero = sql.lit(0);
     return this.db
       .selectFrom('person')
@@ -377,6 +394,23 @@ export class PersonRepository {
             .where('asset_face.deletedAt', 'is', null)
             .where('asset_face.isVisible', '=', true)
             .where((eb) =>
+              options?.includeShared
+                ? eb.or([
+                    eb('person.ownerId', '=', userId),
+                    eb.exists(
+                      eb
+                        .selectFrom('album_asset')
+                        .innerJoin('album', 'album.id', 'album_asset.albumId')
+                        .innerJoin('album_user', 'album_user.albumId', 'album.id')
+                        .select('album.id')
+                        .whereRef('album_asset.assetId', '=', 'asset_face.assetId')
+                        .where('album_user.userId', '=', userId)
+                        .where('album.deletedAt', 'is', null),
+                    ),
+                  ])
+                : eb('person.ownerId', '=', userId),
+            )
+            .where((eb) =>
               eb.exists((eb) =>
                 eb
                   .selectFrom('asset')
@@ -387,7 +421,6 @@ export class PersonRepository {
             ),
         ),
       )
-      .where('person.ownerId', '=', userId)
       .select((eb) => eb.fn.coalesce(eb.fn.countAll<number>(), zero).as('total'))
       .select((eb) => eb.fn.coalesce(eb.fn.countAll<number>().filterWhere('isHidden', '=', true), zero).as('hidden'))
       .executeTakeFirstOrThrow();

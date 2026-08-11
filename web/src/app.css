@@ -19,7 +19,7 @@
 }
 
 @theme {
-  --font-sans: 'GoogleSans', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   --font-mono: 'GoogleSansCode', monospace;
 
   --spacing-18: 4.5rem;
@@ -67,15 +67,33 @@
 @layer base {
   :root {
     /* light */
-    --immich-primary: 66 80 175;
-    --immich-bg: 255 255 255;
-    --immich-fg: 0 0 0;
+    --immich-primary: 71 126 96;
+    --immich-bg: 253 246 227;
+    --immich-fg: 47 48 47;
 
     /* dark */
-    --immich-dark-primary: 172 203 250;
-    --immich-dark-bg: 10 10 10;
-    --immich-dark-fg: 229 231 235;
-    --immich-dark-gray: 33 33 33;
+    --immich-dark-primary: 163 182 164;
+    --immich-dark-bg: 31 43 36;
+    --immich-dark-fg: 253 246 227;
+    --immich-dark-gray: 49 91 69;
+
+    /* TileRun Home component palette */
+    --immich-ui-primary-50: #f3f7f4;
+    --immich-ui-primary-100: #e7efe9;
+    --immich-ui-primary-200: #cfe0d4;
+    --immich-ui-primary-300: #a3b6a4;
+    --immich-ui-primary-400: #6f987d;
+    --immich-ui-primary-500: #477e60;
+    --immich-ui-primary-600: #3b6c51;
+    --immich-ui-primary-700: #315b45;
+    --immich-ui-primary-800: #284a39;
+    --immich-ui-primary-900: #203c2f;
+    --immich-ui-primary-950: #14271e;
+    --immich-ui-light: #fffdf8;
+    --immich-ui-dark: #202824;
+    --immich-ui-muted: #6f756f;
+    --immich-ui-gray: #f0ece3;
+    --immich-ui-default-border: #ddd8ce;
   }
 
   button:not(:disabled),
@@ -112,6 +130,22 @@
 
   :root.dark {
     color-scheme: dark;
+    --immich-ui-primary-50: #14271e;
+    --immich-ui-primary-100: #203c2f;
+    --immich-ui-primary-200: #284a39;
+    --immich-ui-primary-300: #315b45;
+    --immich-ui-primary-400: #477e60;
+    --immich-ui-primary-500: #a3b6a4;
+    --immich-ui-primary-600: #b6c6b7;
+    --immich-ui-primary-700: #cbd7cc;
+    --immich-ui-primary-800: #dde6de;
+    --immich-ui-primary-900: #edf2ed;
+    --immich-ui-primary-950: #f8faf8;
+    --immich-ui-light: #18251e;
+    --immich-ui-dark: #fdf6e3;
+    --immich-ui-muted: #a3b6a4;
+    --immich-ui-gray: #23342b;
+    --immich-ui-default-border: #315b45;
   }
 
   :root:not(.dark) {
@@ -147,6 +181,7 @@
   body {
     margin: 0;
     color: var(--immich-ui-dark);
+    background: radial-gradient(circle at 90% 0, rgb(71 126 96 / 10%), transparent 25rem), #f6f3ec;
   }
 
   body.asset-viewer-open {
@@ -166,6 +201,52 @@
 
   .icon-white-drop-shadow {
     filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+  }
+}
+
+@layer components {
+  #dashboard-navbar > div {
+    border-color: #ddd8ce;
+    background: rgb(255 253 248 / 92%);
+    backdrop-filter: blur(12px);
+  }
+
+  .tilerun-auth-backdrop {
+    background:
+      radial-gradient(circle at 88% 5%, rgb(71 126 96 / 13%), transparent 25rem),
+      linear-gradient(180deg, #f8f5ee 0%, #f2eee5 100%);
+  }
+
+  .tilerun-auth-card {
+    border-color: #ddd8ce;
+    background: rgb(255 253 248 / 96%);
+    box-shadow: 0 18px 55px rgb(28 35 31 / 10%);
+  }
+
+  .tilerun-foto-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .tilerun-foto-links a {
+    color: rgb(49 91 69);
+    text-decoration: none;
+  }
+
+  .tilerun-foto-links a:hover,
+  .tilerun-foto-links a:focus-visible {
+    color: rgb(71 126 96);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  :root.dark .tilerun-foto-links a {
+    color: rgb(163 182 164);
   }
 }
 

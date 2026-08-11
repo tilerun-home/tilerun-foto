@@ -326,6 +326,7 @@ Class | Method | HTTP request | Description
 *UsersApi* | [**updateMyUser**](doc//UsersApi.md#updatemyuser) | **PUT** /users/me | Update current user
 *UsersAdminApi* | [**createUserAdmin**](doc//UsersAdminApi.md#createuseradmin) | **POST** /admin/users | Create a user
 *UsersAdminApi* | [**deleteUserAdmin**](doc//UsersAdminApi.md#deleteuseradmin) | **DELETE** /admin/users/{id} | Delete a user
+*UsersAdminApi* | [**deleteUserSessionsAdmin**](doc//UsersAdminApi.md#deleteusersessionsadmin) | **DELETE** /admin/users/{id}/sessions | Revoke user sessions
 *UsersAdminApi* | [**getUserAdmin**](doc//UsersAdminApi.md#getuseradmin) | **GET** /admin/users/{id} | Retrieve a user
 *UsersAdminApi* | [**getUserCalendarHeatmapAdmin**](doc//UsersAdminApi.md#getusercalendarheatmapadmin) | **GET** /admin/users/{id}/calendar-heatmap | Retrieve calendar heatmap activity
 *UsersAdminApi* | [**getUserPreferencesAdmin**](doc//UsersAdminApi.md#getuserpreferencesadmin) | **GET** /admin/users/{id}/preferences | Retrieve user preferences

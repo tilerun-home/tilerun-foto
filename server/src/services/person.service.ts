@@ -49,7 +49,7 @@ import { Point, transformPoints } from 'src/utils/transform';
 @Injectable()
 export class PersonService extends BaseService {
   async getAll(auth: AuthDto, dto: PersonSearchDto): Promise<PeopleResponseDto> {
-    const { withHidden = false, closestAssetId, closestPersonId, page, size } = dto;
+    const { withHidden = false, includeShared = false, closestAssetId, closestPersonId, page, size } = dto;
     let closestFaceAssetId = closestAssetId;
     const pagination = {
       take: size,
@@ -66,11 +66,15 @@ export class PersonService extends BaseService {
     const { items, hasNextPage } = await this.personRepository.getAllForUser(pagination, auth.user.id, {
       withHidden,
       closestFaceAssetId,
+      ...(includeShared ? { includeShared: true } : {}),
     });
-    const { total, hidden } = await this.personRepository.getNumberOfPeople(auth.user.id);
+    const { total, hidden } = await this.personRepository.getNumberOfPeople(
+      auth.user.id,
+      includeShared ? { includeShared: true } : undefined,
+    );
 
     return {
-      people: items.map((person) => mapPerson(person)),
+      people: items.map((person) => mapPerson(person, person.ownerId !== auth.user.id)),
       hasNextPage,
       total,
       hidden,
@@ -128,8 +132,18 @@ export class PersonService extends BaseService {
     const faces = await this.personRepository.getFaces(dto.id);
     const asset = await this.assetRepository.getForFaces(dto.id);
     const assetDimensions = getDimensions(asset);
+    const hasForeignPeople = faces.some((face) => face.person && face.person.ownerId !== auth.user.id);
+    let includeSharedPeople = false;
 
-    return faces.map((face) => mapFaces(face, auth, asset.edits, assetDimensions));
+    // Immich normally keeps face labels private to the asset owner. TileRun deliberately
+    // carries those labels with photos explicitly shared through an album, but never with
+    // public shared links or assets the viewer cannot otherwise access.
+    if (hasForeignPeople && !auth.sharedLink) {
+      const albums = await this.albumRepository.getByAssetId(auth.user.id, dto.id);
+      includeSharedPeople = albums.length > 0;
+    }
+
+    return faces.map((face) => mapFaces(face, auth, asset.edits, assetDimensions, includeSharedPeople));
   }
 
   async createNewFeaturePhoto(changeFeaturePhoto: string[]) {

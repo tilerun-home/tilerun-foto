@@ -8,6 +8,7 @@ import { AuthDto } from 'src/dtos/auth.dto';
 import { CalendarHeatmapDto, CalendarHeatmapResponseDto } from 'src/dtos/calendar-heatmap.dto';
 import { LicenseKeyDto, LicenseResponseDto } from 'src/dtos/license.dto';
 import { OnboardingDto, OnboardingResponseDto } from 'src/dtos/onboarding.dto';
+import { TileRunProfileUpdateDto } from 'src/dtos/tilerun-profile.dto';
 import { UserPreferencesResponseDto, UserPreferencesUpdateDto, mapPreferences } from 'src/dtos/user-preferences.dto';
 import { CreateProfileImageResponseDto } from 'src/dtos/user-profile.dto';
 import { UserAdminResponseDto, UserResponseDto, UserUpdateMeDto, mapUser, mapUserAdmin } from 'src/dtos/user.dto';
@@ -22,6 +23,12 @@ import { ImmichFileResponse } from 'src/utils/file';
 import { mimeTypes } from 'src/utils/mime-types';
 import { getPreferences, getPreferencesPartial, mergePreferences } from 'src/utils/preferences';
 import { generateProfileImage } from 'src/utils/profile-image';
+import {
+  deleteTileRunAvatar,
+  getTileRunProfile,
+  updateTileRunProfile,
+  uploadTileRunAvatar,
+} from 'src/utils/tilerun-profile';
 
 @Injectable()
 export class UserService extends BaseService {
@@ -53,6 +60,14 @@ export class UserService extends BaseService {
   }
 
   async updateMe({ user }: AuthDto, dto: UserUpdateMeDto): Promise<UserAdminResponseDto> {
+    if (dto.email && dto.email.toLowerCase() !== user.email.toLowerCase()) {
+      throw new BadRequestException('Your TileRun email address is managed centrally');
+    }
+    let centralName = dto.name;
+    if (dto.name) {
+      const central = await updateTileRunProfile(user.email, { display_name: dto.name });
+      centralName = central.display_name;
+    }
     if (dto.email) {
       const duplicate = await this.userRepository.getByEmail(dto.email);
       if (duplicate && duplicate.id !== user.id) {
@@ -62,8 +77,8 @@ export class UserService extends BaseService {
     }
 
     const update: Updateable<UserTable> = {
-      email: dto.email,
-      name: dto.name,
+      email: undefined,
+      name: centralName,
       avatarColor: dto.avatarColor,
     };
 
@@ -76,6 +91,26 @@ export class UserService extends BaseService {
     const updatedUser = await this.userRepository.update(user.id, update);
 
     return mapUserAdmin(updatedUser);
+  }
+
+  async getCentralProfile(auth: AuthDto) {
+    const profile = await getTileRunProfile(auth.user.email);
+    if (profile.display_name !== auth.user.name) {
+      await this.userRepository.update(auth.user.id, { name: profile.display_name });
+    }
+    return profile;
+  }
+
+  async updateCentralProfile(auth: AuthDto, dto: TileRunProfileUpdateDto) {
+    const profile = await updateTileRunProfile(auth.user.email, {
+      display_name: dto.displayName,
+      preferred_language: dto.preferredLanguage,
+      version: dto.version,
+    });
+    if (profile.display_name !== auth.user.name) {
+      await this.userRepository.update(auth.user.id, { name: profile.display_name });
+    }
+    return profile;
   }
 
   async getMyPreferences(auth: AuthDto): Promise<UserPreferencesResponseDto> {
@@ -102,6 +137,8 @@ export class UserService extends BaseService {
 
   async createProfileImage(auth: AuthDto, file: Express.Multer.File): Promise<CreateProfileImageResponseDto> {
     const { profileImagePath: oldPath } = await this.findOrFail(auth.user.id, { withDeleted: false });
+
+    await uploadTileRunAvatar(auth.user.email, file.path, file.mimetype);
 
     let profileImagePath: string;
     try {
@@ -137,6 +174,7 @@ export class UserService extends BaseService {
     if (user.profileImagePath === '') {
       throw new BadRequestException("Can't delete a missing profile Image");
     }
+    await deleteTileRunAvatar(auth.user.email);
     await this.userRepository.update(auth.user.id, { profileImagePath: '', profileChangedAt: new Date() });
     await this.jobRepository.queue({ name: JobName.FileDelete, data: { files: [user.profileImagePath] } });
   }

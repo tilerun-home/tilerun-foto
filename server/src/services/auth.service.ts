@@ -21,13 +21,15 @@ import {
   mapLoginResponse,
 } from 'src/dtos/auth.dto';
 import { UserAdminResponseDto, mapUserAdmin } from 'src/dtos/user.dto';
-import { AuthType, ImmichCookie, ImmichHeader, ImmichQuery, JobName, Permission } from 'src/enum';
+import { AuthType, ImmichCookie, ImmichHeader, ImmichQuery, JobName, Permission, UserMetadataKey } from 'src/enum';
 import { OAuthProfile } from 'src/repositories/oauth.repository';
 import { BaseService } from 'src/services/base.service';
 import { isGranted } from 'src/utils/access';
 import { HumanReadableSize } from 'src/utils/bytes';
+import { validateCloudflareAccessJwt } from 'src/utils/cloudflare-access';
 import { generateProfileImage } from 'src/utils/profile-image';
 import { getUserAgentDetails } from 'src/utils/request';
+import { getTileRunProfile } from 'src/utils/tilerun-profile';
 export interface LoginDetails {
   isSecure: boolean;
   clientIp: string;
@@ -71,6 +73,52 @@ export class AuthService extends BaseService {
       this.logger.warn(`Failed login attempt for user ${dto.email} from ip address ${details.clientIp}`);
       throw new UnauthorizedException('Incorrect email or password');
     }
+
+    return this.createLoginResponse(user, details);
+  }
+
+  async loginWithTileRunAccess(assertion: string | undefined, details: LoginDetails) {
+    let identity;
+    try {
+      identity = await validateCloudflareAccessJwt(assertion);
+    } catch (error: Error | any) {
+      this.logger.warn(`Rejected TileRun Access login: ${error.message}`);
+      throw new UnauthorizedException('TileRun Access authentication failed');
+    }
+
+    let profile;
+    try {
+      profile = await getTileRunProfile(identity.email);
+    } catch (error: Error | any) {
+      this.logger.warn(`Rejected TileRun profile for ${identity.email}: ${error.message}`);
+      throw new UnauthorizedException('TileRun Foto access is not assigned');
+    }
+
+    let user = await this.userRepository.getByEmail(identity.email);
+    if (!user) {
+      this.logger.log(`Registering TileRun Access user: ${identity.subject}/${identity.email}`);
+      user = await this.createUser({
+        name: profile.display_name || identity.email,
+        email: identity.email,
+        isAdmin: false,
+      });
+    } else if (profile.display_name && profile.display_name !== user.name) {
+      user = await this.userRepository.update(user.id, { name: profile.display_name });
+    }
+
+    // TileRun centrally manages the account and its defaults, so Immich's standalone
+    // first-run wizard does not apply. Persist this for existing as well as new users.
+    await this.userRepository.upsertMetadata(user.id, {
+      key: UserMetadataKey.Onboarding,
+      value: { isOnboarded: true },
+    });
+    user = {
+      ...user,
+      metadata: [
+        ...user.metadata.filter(({ key }) => key !== UserMetadataKey.Onboarding),
+        { key: UserMetadataKey.Onboarding, value: { isOnboarded: true } },
+      ],
+    };
 
     return this.createLoginResponse(user, details);
   }

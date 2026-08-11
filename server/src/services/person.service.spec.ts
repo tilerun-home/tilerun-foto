@@ -86,6 +86,30 @@ describe(PersonService.name, () => {
         withHidden: false,
       });
     });
+
+    it('should mark people inherited from a shared album as shared', async () => {
+      const auth = AuthFactory.create();
+      const ownPerson = PersonFactory.create({ ownerId: auth.user.id, name: 'Manuel Bolsius' });
+      const sharedPerson = PersonFactory.create({ ownerId: newUuid(), name: 'Caroline Bolsius' });
+      mocks.person.getAllForUser.mockResolvedValue({ items: [ownPerson, sharedPerson], hasNextPage: false });
+      mocks.person.getNumberOfPeople.mockResolvedValue({ total: 2, hidden: 0 });
+
+      const result = await sut.getAll(auth, {
+        withHidden: false,
+        includeShared: true,
+        page: 1,
+        size: 10,
+      });
+
+      expect(result.people[0]).toEqual(expect.objectContaining({ id: ownPerson.id }));
+      expect(result.people[0]).not.toHaveProperty('isShared');
+      expect(result.people[1]).toEqual(expect.objectContaining({ id: sharedPerson.id, isShared: true }));
+      expect(mocks.person.getAllForUser).toHaveBeenCalledWith({ skip: 0, take: 10 }, auth.user.id, {
+        withHidden: false,
+        includeShared: true,
+      });
+      expect(mocks.person.getNumberOfPeople).toHaveBeenCalledWith(auth.user.id, { includeShared: true });
+    });
   });
 
   describe('getById', () => {
@@ -161,6 +185,22 @@ describe(PersonService.name, () => {
         }),
       );
       expect(mocks.access.person.checkOwnerAccess).toHaveBeenCalledWith(auth.user.id, new Set([person.id]));
+    });
+
+    it('should serve a person thumbnail inherited through a shared album', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ ownerId: newUuid() });
+      mocks.person.getById.mockResolvedValue(person);
+      mocks.access.person.checkSharedAlbumAccess.mockResolvedValue(new Set([person.id]));
+
+      await expect(sut.getThumbnail(auth, person.id)).resolves.toEqual(
+        new ImmichFileResponse({
+          path: person.thumbnailPath,
+          contentType: 'image/jpeg',
+          cacheControl: CacheControl.PrivateWithoutCache,
+        }),
+      );
+      expect(mocks.access.person.checkSharedAlbumAccess).toHaveBeenCalledWith(auth.user.id, new Set([person.id]));
     });
   });
 
@@ -362,6 +402,62 @@ describe(PersonService.name, () => {
       await expect(sut.getFacesById(auth, { id: face.assetId })).resolves.toStrictEqual([
         mapFaces(getForAssetFace(face), auth),
       ]);
+    });
+
+    it('should include face labels for a family member viewing an asset in a shared album', async () => {
+      const auth = AuthFactory.create();
+      const face = AssetFaceFactory.from().person({ ownerId: newUuid(), name: 'Caroline Bolsius' }).build();
+      const asset = AssetFactory.from({ id: face.assetId }).exif().build();
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
+      mocks.person.getFaces.mockResolvedValue([getForAssetFace(face)]);
+      mocks.asset.getForFaces.mockResolvedValue({ edits: [], ...asset.exifInfo });
+      mocks.album.getByAssetId.mockResolvedValue([{ description: 'Gedeeld gezinsalbum.' } as never]);
+
+      const result = await sut.getFacesById(auth, { id: face.assetId });
+
+      expect(result[0].person).toEqual(expect.objectContaining({ id: face.person?.id, name: 'Caroline Bolsius' }));
+    });
+
+    it('should include face labels in any album explicitly shared with the user', async () => {
+      const auth = AuthFactory.create();
+      const face = AssetFaceFactory.from().person({ ownerId: newUuid(), name: 'Caroline Bolsius' }).build();
+      const asset = AssetFactory.from({ id: face.assetId }).exif().build();
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
+      mocks.person.getFaces.mockResolvedValue([getForAssetFace(face)]);
+      mocks.asset.getForFaces.mockResolvedValue({ edits: [], ...asset.exifInfo });
+      mocks.album.getByAssetId.mockResolvedValue([{ description: 'Gewoon gedeeld album' } as never]);
+
+      const result = await sut.getFacesById(auth, { id: face.assetId });
+
+      expect(result[0].person).toEqual(expect.objectContaining({ id: face.person?.id, name: 'Caroline Bolsius' }));
+    });
+
+    it('should keep face labels private when the asset is not in an album shared with the user', async () => {
+      const auth = AuthFactory.create();
+      const face = AssetFaceFactory.from().person({ ownerId: newUuid(), name: 'Caroline Bolsius' }).build();
+      const asset = AssetFactory.from({ id: face.assetId }).exif().build();
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
+      mocks.person.getFaces.mockResolvedValue([getForAssetFace(face)]);
+      mocks.asset.getForFaces.mockResolvedValue({ edits: [], ...asset.exifInfo });
+      mocks.album.getByAssetId.mockResolvedValue([]);
+
+      const result = await sut.getFacesById(auth, { id: face.assetId });
+
+      expect(result[0].person).toBeNull();
+    });
+
+    it('should keep face labels private on public shared links', async () => {
+      const auth = AuthFactory.from().sharedLink().build();
+      const face = AssetFaceFactory.from().person({ ownerId: newUuid(), name: 'Caroline Bolsius' }).build();
+      const asset = AssetFactory.from({ id: face.assetId }).exif().build();
+      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
+      mocks.person.getFaces.mockResolvedValue([getForAssetFace(face)]);
+      mocks.asset.getForFaces.mockResolvedValue({ edits: [], ...asset.exifInfo });
+
+      const result = await sut.getFacesById(auth, { id: face.assetId });
+
+      expect(result[0].person).toBeNull();
+      expect(mocks.album.getByAssetId).not.toHaveBeenCalled();
     });
 
     it('should reject if the user has not access to the asset', async () => {

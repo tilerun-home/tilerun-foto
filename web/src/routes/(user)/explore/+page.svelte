@@ -70,7 +70,11 @@
       <SingleGridRow class="grid grid-flow-col grid-auto-fill-20 gap-x-4 md:grid-auto-fill-28">
         {#snippet children({ itemCount })}
           {#each people.slice(0, itemCount) as person (person.id)}
-            <a href={Route.viewPerson(person)} class="relative text-center">
+            <svelte:element
+              this={person.isShared ? 'div' : 'a'}
+              href={person.isShared ? undefined : Route.viewPerson(person)}
+              class="relative text-center"
+            >
               <ImageThumbnail
                 circle
                 shadow
@@ -84,7 +88,7 @@
                 </div>
               {/if}
               <p class="mt-2 text-sm font-medium text-ellipsis dark:text-white">{person.name}</p>
-            </a>
+            </svelte:element>
           {/each}
         {/snippet}
       </SingleGridRow>

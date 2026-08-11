@@ -90,6 +90,11 @@ describe(SearchService.name, () => {
       const result = await sut.getExploreData(auth);
 
       expect(result).toEqual(expectedResponse);
+      expect(mocks.asset.getAssetIdByCity).toHaveBeenCalledWith(auth.user.id, {
+        maxFields: 12,
+        minAssetsPerField: 1,
+      });
+      expect(mocks.asset.getRecentlyCreatedAssetIds).toHaveBeenCalledWith(auth.user.id, 12);
     });
   });
 

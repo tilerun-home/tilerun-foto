@@ -11,6 +11,7 @@
   import { authManager } from '$lib/managers/auth-manager.svelte';
   import { eventManager } from '$lib/managers/event-manager.svelte';
   import { serverConfigManager } from '$lib/managers/server-config-manager.svelte';
+  import { tileRunProfileManager } from '$lib/managers/tilerun-profile-manager.svelte';
   import ServerRestartingModal from '$lib/modals/ServerRestartingModal.svelte';
   import { Route } from '$lib/route';
   import { lang, locale } from '$lib/stores/preferences.store';
@@ -22,6 +23,7 @@
     CommandPaletteProvider,
     CORE_PAGE_COMMANDS,
     defaultProvider,
+    logoManager,
     MOBILE_APP_COMMANDS,
     modalManager,
     OTHER_SITE_COMMANDS,
@@ -38,7 +40,7 @@
   import { En } from 'media-chrome/lang/en';
   import { addTranslation } from 'media-chrome/utils/i18n';
   import { onMount, type Snippet } from 'svelte';
-  import { t } from 'svelte-i18n';
+  import { locale as i18nLocale, t } from 'svelte-i18n';
   import { get } from 'svelte/store';
   import '../app.css';
 
@@ -166,6 +168,30 @@
   let { children }: Props = $props();
 
   let showNavigationLoadingBar = $state(false);
+  $effect(() => {
+    const email = authManager.authenticated ? authManager.user.email : '';
+    if (!email) {
+      return;
+    }
+    void tileRunProfileManager.load(email);
+  });
+
+  $effect(() => {
+    const profile = tileRunProfileManager.profile;
+    if (!profile) {
+      return;
+    }
+    $lang = profile.effective_language;
+    void i18nLocale.set(profile.effective_language);
+    if (authManager.authenticated && profile.display_name !== authManager.user.name) {
+      void authManager.refresh();
+    }
+  });
+
+  logoManager.setLogo({
+    ...logoManager.logos,
+    icon: '/tilerun-foto-logo-v2.svg',
+  });
 
   toastManager.setOptions({ class: 'top-16 fixed' });
 
@@ -235,10 +261,10 @@
 <VersionAnnouncement />
 
 <svelte:head>
-  <title>{page.data.meta?.title || 'Web'} - Immich</title>
+  <title>{page.data.meta?.title || 'Foto'} - TileRun Foto</title>
   <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
-  <meta name="theme-color" content="white" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="black" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#fdf6e3" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1f2b24" media="(prefers-color-scheme: dark)" />
 
   {#if page.data.meta}
     <meta name="description" content={page.data.meta.description} />

@@ -305,6 +305,9 @@ export const downloadJson = (data: unknown, filename: string) => {
 };
 
 export const oauth = {
+  loginWithTileRunAccess: () => {
+    globalThis.location.assign('/api/auth/tilerun-access');
+  },
   isCallback: (location: Location) => {
     const search = location.search;
     return search.includes('code=') || search.includes('error=');
@@ -326,7 +329,9 @@ export const oauth = {
     const $t = get(t);
     try {
       const redirectUri = location.href.split('?', 1)[0];
-      const { url } = await startOAuth({ oAuthConfigDto: { redirectUri } });
+      const { url } = await startOAuth({
+        oAuthConfigDto: { redirectUri },
+      });
       globalThis.location.assign(url);
       return true;
     } catch (error) {

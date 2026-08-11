@@ -4,7 +4,6 @@
   import OnboardingBackup from './OnboardingBackup.svelte';
   import OnboardingCard from './OnboardingCard.svelte';
   import OnboardingHello from './OnboardingHello.svelte';
-  import OnboardingLocale from './OnboardingLanguage.svelte';
   import OnboardingMobileApp from './OnboardingMobileApp.svelte';
   import OnboardingServerPrivacy from './OnboardingServerPrivacy.svelte';
   import OnboardingStorageTemplate from './OnboardingStorageTemplate.svelte';
@@ -22,7 +21,6 @@
     mdiHarddisk,
     mdiIncognito,
     mdiThemeLightDark,
-    mdiTranslate,
   } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
@@ -35,8 +33,7 @@
       | typeof OnboardingStorageTemplate
       | typeof OnboardingServerPrivacy
       | typeof OnboardingUserPrivacy
-      | typeof OnboardingMobileApp
-      | typeof OnboardingLocale;
+      | typeof OnboardingMobileApp;
     role: OnboardingRole;
     title?: string;
     icon?: string;
@@ -50,13 +47,6 @@
       role: OnboardingRole.USER,
       title: $t('theme'),
       icon: mdiThemeLightDark,
-    },
-    {
-      name: 'language',
-      component: OnboardingLocale,
-      role: OnboardingRole.USER,
-      title: $t('language'),
-      icon: mdiTranslate,
     },
     {
       name: 'server_privacy',

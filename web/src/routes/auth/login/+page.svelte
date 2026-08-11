@@ -45,7 +45,6 @@
     if (oauth.isCallback(location)) {
       try {
         const user = await oauth.login(location);
-
         if (!user.isOnboarded) {
           await onOnboarding();
           return;
@@ -66,8 +65,7 @@
         (featureFlagsManager.value.oauthAutoLaunch && !oauth.isAutoLaunchDisabled(location)) ||
         oauth.isAutoLaunchEnabled(location)
       ) {
-        await goto(Route.login({ autoLaunch: 0 }), { replaceState: true });
-        await oauth.authorize(location);
+        oauth.loginWithTileRunAccess();
         return;
       }
     } catch (error) {

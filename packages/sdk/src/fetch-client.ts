@@ -841,6 +841,8 @@ export type PersonResponseDto = {
     isFavorite?: boolean;
     /** Is hidden */
     isHidden: boolean;
+    /** Person inherited from an album shared with the current user */
+    isShared?: boolean;
     /** Person name */
     name: string;
     /** Thumbnail path */
@@ -3780,6 +3782,17 @@ export function restoreUserAdmin({ id }: {
     }));
 }
 /**
+ * Revoke user sessions
+ */
+export function deleteUserSessionsAdmin({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/admin/users/${encodeURIComponent(id)}/sessions`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+/**
  * Retrieve user sessions
  */
 export function getUserSessionsAdmin({ id }: {
@@ -5366,9 +5379,10 @@ export function deletePeople({ bulkIdsDto }: {
 /**
  * Get all people
  */
-export function getAllPeople({ closestAssetId, closestPersonId, page, size, withHidden }: {
+export function getAllPeople({ closestAssetId, closestPersonId, includeShared, page, size, withHidden }: {
     closestAssetId?: string;
     closestPersonId?: string;
+    includeShared?: boolean;
     page?: number;
     size?: number;
     withHidden?: boolean;
@@ -5379,6 +5393,7 @@ export function getAllPeople({ closestAssetId, closestPersonId, page, size, with
     }>(`/people${QS.query(QS.explode({
         closestAssetId,
         closestPersonId,
+        includeShared,
         page,
         size,
         withHidden
@@ -7315,6 +7330,7 @@ export enum Permission {
     AdminUserUpdate = "adminUser.update",
     AdminUserDelete = "adminUser.delete",
     AdminSessionRead = "adminSession.read",
+    AdminSessionDelete = "adminSession.delete",
     AdminAuthUnlinkAll = "adminAuth.unlinkAll"
 }
 export enum AssetMediaStatus {

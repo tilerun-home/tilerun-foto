@@ -1855,6 +1855,55 @@
       }
     },
     "/admin/users/{id}/sessions": {
+      "delete": {
+        "description": "Invalidate every session for a user without deleting the user or assets. TileRun integration endpoint.",
+        "operationId": "deleteUserSessionsAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Revoke user sessions",
+        "tags": [
+          "Users (admin)"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v3",
+            "state": "Added"
+          },
+          {
+            "version": "v3",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "adminSession.delete",
+        "x-immich-state": "Stable"
+      },
       "get": {
         "description": "Retrieve all sessions for a specific user.",
         "operationId": "getUserSessionsAdmin",
@@ -5610,6 +5659,22 @@
         "x-immich-state": "Stable"
       }
     },
+    "/auth/tilerun-access": {
+      "get": {
+        "description": "Create a Foto session from a validated Cloudflare Access application assertion and open Foto.",
+        "operationId": "loginWithTileRunAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Login with TileRun Access",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
     "/auth/validateToken": {
       "post": {
         "description": "Validate the current authorization method is still valid.",
@@ -8776,6 +8841,15 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
               "type": "string"
+            }
+          },
+          {
+            "name": "includeShared",
+            "required": false,
+            "in": "query",
+            "description": "Include people from albums shared with the current user",
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -14284,6 +14358,104 @@
         ],
         "x-immich-permission": "tag.asset",
         "x-immich-state": "Stable"
+      }
+    },
+    "/tilerun/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "TileRunProfile"
+        ],
+        "x-immich-permission": "user.read"
+      },
+      "patch": {
+        "operationId": "updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TileRunProfileUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "tags": [
+          "TileRunProfile"
+        ],
+        "x-immich-permission": "user.update"
+      }
+    },
+    "/tilerun/profile/users/sync": {
+      "post": {
+        "operationId": "syncUsers",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TileRunUserSyncDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "TileRunProfile"
+        ]
       }
     },
     "/timeline/bucket": {
@@ -21038,6 +21210,7 @@
           "adminUser.update",
           "adminUser.delete",
           "adminSession.read",
+          "adminSession.delete",
           "adminAuth.unlinkAll"
         ],
         "type": "string"
@@ -21117,6 +21290,10 @@
           },
           "isHidden": {
             "description": "Is hidden",
+            "type": "boolean"
+          },
+          "isShared": {
+            "description": "Person inherited from an album shared with the current user",
             "type": "boolean"
           },
           "name": {
@@ -26860,6 +27037,95 @@
         },
         "required": [
           "messageId"
+        ],
+        "type": "object"
+      },
+      "TileRunProfileUpdateDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 100,
+            "minLength": 2,
+            "type": "string"
+          },
+          "preferredLanguage": {
+            "nullable": true,
+            "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$",
+            "type": "string"
+          },
+          "version": {
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "TileRunUserSyncDto": {
+        "properties": {
+          "home": {
+            "default": {
+              "id": "primary",
+              "name": "TileRun Home"
+            },
+            "properties": {
+              "id": {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "revoke": {
+            "default": [],
+            "items": {
+              "format": "email",
+              "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "users": {
+            "items": {
+              "properties": {
+                "email": {
+                  "format": "email",
+                  "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                  "type": "string"
+                },
+                "isAdmin": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "name": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "email",
+                "name"
+              ],
+              "type": "object"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          }
+        },
+        "required": [
+          "users"
         ],
         "type": "object"
       },

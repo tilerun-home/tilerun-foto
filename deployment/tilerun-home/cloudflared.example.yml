@@ -1,0 +1,11 @@
+tunnel: CHANGE-ME-TUNNEL-ID
+credentials-file: /run/secrets/cloudflared_credentials
+
+ingress:
+  - hostname: foto.tilerun.net
+    service: http://192.168.1.2:2283
+    originRequest:
+      httpHostHeader: foto.tilerun.net
+      connectTimeout: 30s
+      noHappyEyeballs: false
+  - service: http_status:404

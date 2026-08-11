@@ -57,77 +57,94 @@
   );
 </script>
 
-{#if !authManager.isSharedLink && isOwner}
+{#if !authManager.isSharedLink && (isOwner || visiblePeople.length > 0)}
   <section class="px-4 pt-4 text-sm">
     <div class="flex h-10 w-full items-center justify-between">
       <Text size="small" color="muted">{$t('people')}</Text>
-      <div class="flex items-center gap-2">
-        {#if people.some((person) => person.isHidden)}
-          <IconButton
-            aria-label={$t('show_hidden_people')}
-            icon={assetViewerManager.isShowingHiddenPeople ? mdiEyeOff : mdiEye}
-            size="medium"
-            shape="round"
-            color="secondary"
-            variant="ghost"
-            onclick={() => assetViewerManager.toggleHiddenPeople()}
-          />
-        {/if}
-        <IconButton
-          aria-label={$t('tag_people')}
-          icon={mdiPlus}
-          size="medium"
-          shape="round"
-          color="secondary"
-          variant="ghost"
-          onclick={() => assetViewerManager.toggleFaceEditMode()}
-        />
-
-        {#if faceManager.data.length > 0}
-          <IconButton
-            aria-label={$t('edit_people')}
-            icon={mdiPencil}
-            size="medium"
-            shape="round"
-            color="secondary"
-            variant="ghost"
-            onclick={() => assetViewerManager.openEditFacesPanel()}
-          />
-        {/if}
-      </div>
-    </div>
-
-    <div class="mt-2 grid {visiblePeople.length <= 6 ? 'grid-cols-3 gap-3' : 'grid-cols-4 gap-2'}">
-      {#each visiblePeople as person (person.id)}
-        {@const personFaces = faceManager.facesByPersonId.get(person.id) ?? []}
-        {@const isHighlighted = personFaces.some((f) => assetViewerManager.highlightedFaces.some((b) => b.id === f.id))}
-        <a
-          class="group outline-none"
-          href={Route.viewPerson(person, { previousRoute })}
-          onfocus={() => assetViewerManager.setHighlightedFaces(personFaces)}
-          onblur={() => assetViewerManager.clearHighlightedFaces()}
-          onpointerenter={() => assetViewerManager.setHighlightedFaces(personFaces)}
-          onpointerleave={() => assetViewerManager.clearHighlightedFaces()}
-        >
-          <ImageThumbnail
-            curve
-            shadow
-            url={getPeopleThumbnailUrl(person)}
-            altText={person.name}
-            title={person.name}
-            widthStyle="100%"
-            hidden={person.isHidden}
-            highlighted={isHighlighted}
-            class="outline-offset-2 outline-immich-primary group-focus-visible:outline-2 dark:outline-immich-dark-primary"
-          />
-          <p class="mt-1 truncate font-medium" title={person.name}>{person.name}</p>
-          {#if person.birthDate && person.formattedAge}
-            <p class="font-light {visiblePeople.length > 6 ? 'text-xs' : ''}" title={person.formattedBirthDate!}>
-              {person.formattedAge}
-            </p>
+      {#if isOwner}
+        <div class="flex items-center gap-2">
+          {#if people.some((person) => person.isHidden)}
+            <IconButton
+              aria-label={$t('show_hidden_people')}
+              icon={assetViewerManager.isShowingHiddenPeople ? mdiEyeOff : mdiEye}
+              size="medium"
+              shape="round"
+              color="secondary"
+              variant="ghost"
+              onclick={() => assetViewerManager.toggleHiddenPeople()}
+            />
           {/if}
-        </a>
-      {/each}
+          <IconButton
+            aria-label={$t('tag_people')}
+            icon={mdiPlus}
+            size="medium"
+            shape="round"
+            color="secondary"
+            variant="ghost"
+            onclick={() => assetViewerManager.toggleFaceEditMode()}
+          />
+
+          {#if faceManager.data.length > 0}
+            <IconButton
+              aria-label={$t('edit_people')}
+              icon={mdiPencil}
+              size="medium"
+              shape="round"
+              color="secondary"
+              variant="ghost"
+              onclick={() => assetViewerManager.openEditFacesPanel()}
+            />
+          {/if}
+        </div>
+      {/if}
     </div>
+
+    {#if isOwner}
+      <div class="mt-2 grid {visiblePeople.length <= 6 ? 'grid-cols-3 gap-3' : 'grid-cols-4 gap-2'}">
+        {#each visiblePeople as person (person.id)}
+          {@const personFaces = faceManager.facesByPersonId.get(person.id) ?? []}
+          {@const isHighlighted = personFaces.some((f) =>
+            assetViewerManager.highlightedFaces.some((b) => b.id === f.id),
+          )}
+          <a
+            class="group outline-none"
+            href={Route.viewPerson(person, { previousRoute })}
+            onfocus={() => assetViewerManager.setHighlightedFaces(personFaces)}
+            onblur={() => assetViewerManager.clearHighlightedFaces()}
+            onpointerenter={() => assetViewerManager.setHighlightedFaces(personFaces)}
+            onpointerleave={() => assetViewerManager.clearHighlightedFaces()}
+          >
+            <ImageThumbnail
+              curve
+              shadow
+              url={getPeopleThumbnailUrl(person)}
+              altText={person.name}
+              title={person.name}
+              widthStyle="100%"
+              hidden={person.isHidden}
+              highlighted={isHighlighted}
+              class="outline-offset-2 outline-immich-primary group-focus-visible:outline-2 dark:outline-immich-dark-primary"
+            />
+            <p class="mt-1 truncate font-medium" title={person.name}>{person.name}</p>
+            {#if person.birthDate && person.formattedAge}
+              <p class="font-light {visiblePeople.length > 6 ? 'text-xs' : ''}" title={person.formattedBirthDate!}>
+                {person.formattedAge}
+              </p>
+            {/if}
+          </a>
+        {/each}
+      </div>
+    {:else}
+      <div class="mt-1 flex flex-wrap gap-2" aria-label={$t('people')}>
+        {#each visiblePeople as person (person.id)}
+          <span
+            class="max-w-full truncate rounded-full bg-immich-primary/10 px-3 py-1.5 font-medium text-immich-primary dark:bg-immich-dark-primary/15 dark:text-immich-dark-primary"
+            title={person.name}
+          >
+            {person.name}
+          </span>
+        {/each}
+      </div>
+    {/if}
   </section>
 {/if}
